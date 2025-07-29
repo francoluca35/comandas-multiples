@@ -1,6 +1,5 @@
-@import "tailwindcss";
-@import "tailwindcss/preflight";  /* Reemplaza a @tailwind base */
-@import "tailwindcss/utilities";  /* Incluye también componentes automáticamente */
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
 :root {

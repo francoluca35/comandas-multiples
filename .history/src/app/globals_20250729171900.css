@@ -1,7 +1,4 @@
 @import "tailwindcss";
-@import "tailwindcss/preflight";  /* Reemplaza a @tailwind base */
-@import "tailwindcss/utilities";  /* Incluye también componentes automáticamente */
-@tailwind utilities;
 
 :root {
   --background: #ffffff;
