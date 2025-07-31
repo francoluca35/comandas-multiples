@@ -35,19 +35,6 @@ function PreLogin() {
     });
   };
 
-  useEffect(() => {
-    const rememberedEmail = localStorage.getItem("recordedEmail");
-    const rememberedCod = localStorage.getItem("recordedCod");
-
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRecordarUsuario(true);
-    }
-
-    if (rememberedCod) {
-      setCodActivacion(rememberedCod);
-    }
-  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -74,14 +61,6 @@ function PreLogin() {
             text: `Tienes ${data.cantUsuarios} Usuarios permitidos!`,
             icon: "success",
           }).then(() => {
-            if (recordarUsuario) {
-              localStorage.setItem("recordedEmail", email);
-              localStorage.setItem("recordedCod", codActivacion);
-            } else {
-              localStorage.removeItem("recordedEmail");
-              localStorage.removeItem("recordedCod");
-            }
-
             router.push("/home-comandas/login");
           });
         } else {
@@ -109,7 +88,19 @@ function PreLogin() {
       });
     }
   };
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("recordedEmail");
+    const rememberedCod = localStorage.getItem("recordedCod");
 
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRecordarUsuario(true);
+    }
+
+    if (rememberedCod) {
+      setCodActivacion(rememberedCod);
+    }
+  }, []);
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-4">
       <div className="bg-[#0c14499b] text-white w-full max-w-sm p-6 rounded shadow-md flex flex-col items-center">
