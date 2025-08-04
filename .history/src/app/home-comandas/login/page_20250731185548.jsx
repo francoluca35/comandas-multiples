@@ -56,7 +56,7 @@ function Login() {
       });
 
       // Redirigir después de aceptar la alerta
-      router.push("/home-comandas/home");
+      router.push("/home-comandas/Home");
     } else {
       Swal.fire("Error", "Contraseña incorrecta", "error");
     }

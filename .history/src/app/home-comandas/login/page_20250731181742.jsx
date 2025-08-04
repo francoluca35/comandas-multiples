@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { FaUsers, FaSyncAlt } from "react-icons/fa";
+import { FaUsers, FaKeyboard, FaSyncAlt } from "react-icons/fa";
 import { db } from "../../../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -81,7 +81,7 @@ function Login() {
               }`}
               onClick={() => {
                 setUsuarioSeleccionado(user);
-                setPassword("");
+                setPassword(""); // limpiar si se cambia
               }}
             >
               <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">

@@ -81,7 +81,7 @@ function Login() {
               }`}
               onClick={() => {
                 setUsuarioSeleccionado(user);
-                setPassword("");
+                setPassword(""); // limpiar si se cambia
               }}
             >
               <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">

@@ -77,7 +77,6 @@ function PreLogin() {
             if (recordarUsuario) {
               localStorage.setItem("recordedEmail", email);
               localStorage.setItem("recordedCod", codActivacion);
-              localStorage.setItem("codActivacion", codActivacion);
               localStorage.setItem("nombreResto", data.resto);
             } else {
               localStorage.removeItem("recordedEmail");
