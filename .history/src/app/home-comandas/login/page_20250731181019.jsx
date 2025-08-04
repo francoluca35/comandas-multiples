@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { FaUsers, FaSyncAlt } from "react-icons/fa";
+import { FaUsers, FaKeyboard, FaSyncAlt } from "react-icons/fa";
 import { db } from "../../../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -33,29 +33,12 @@ function Login() {
     fetchUsuarios();
   }, []);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!usuarioSeleccionado) return;
-
     if (password === usuarioSeleccionado.password) {
       // Guardar datos del usuario logueado
       localStorage.setItem("usuario", usuarioSeleccionado.usuario);
       localStorage.setItem("rol", usuarioSeleccionado.rol);
-
-      // Mostrar alerta personalizada con imagen y nombre
-      await Swal.fire({
-        title: `¡Bienvenido, ${usuarioSeleccionado.usuario}!`,
-        text: `Rol: ${usuarioSeleccionado.rol}`,
-        imageUrl: usuarioSeleccionado.imagen,
-        imageWidth: 100,
-        imageHeight: 100,
-        imageAlt: "Foto de perfil",
-        background: "#1c1c1c",
-        color: "#fff",
-        confirmButtonColor: "#4da6ff",
-        confirmButtonText: "Entrar al sistema",
-      });
-
-      // Redirigir después de aceptar la alerta
       router.push("/home-comandas/home");
     } else {
       Swal.fire("Error", "Contraseña incorrecta", "error");
@@ -70,7 +53,7 @@ function Login() {
           Usuarios
         </div>
 
-        <div className="bg-[#2e2e2e] p-3 rounded justify-center flex flex-wrap gap-2  mb-4">
+        <div className="bg-[#2e2e2e] p-3 rounded flex flex-wrap gap-2 justify-start mb-4">
           {usuarios.map((user) => (
             <button
               key={user.id}
@@ -81,7 +64,7 @@ function Login() {
               }`}
               onClick={() => {
                 setUsuarioSeleccionado(user);
-                setPassword("");
+                setPassword(""); // limpiar si se cambia
               }}
             >
               <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">
@@ -113,6 +96,9 @@ function Login() {
         )}
 
         <div className="flex items-center justify-between">
+          <button className="bg-white text-black rounded-full p-3 shadow">
+            <FaKeyboard size={20} />
+          </button>
           <button
             className="bg-[#4da6ff] text-black font-bold px-4 py-2 rounded"
             onClick={() => router.push("/home-comandas/register")}
