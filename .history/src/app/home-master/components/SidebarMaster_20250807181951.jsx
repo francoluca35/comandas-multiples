@@ -9,7 +9,7 @@ import {
   FaHistory,
   FaToggleOn,
 } from "react-icons/fa";
-import { useAuth } from "../../../app/context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 const opciones = [
   { id: "inicio", label: "Inicio", icon: FaHome },
