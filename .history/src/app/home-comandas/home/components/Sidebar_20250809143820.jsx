@@ -49,8 +49,6 @@ function Sidebar() {
       setActiveItem("inventario");
     } else if (pathname === "/home-comandas/pagos") {
       setActiveItem("pagos");
-    } else if (pathname === "/home-comandas/reportes") {
-      setActiveItem("reportes");
     } else {
       setActiveItem("home");
     }
@@ -400,6 +398,37 @@ function Sidebar() {
               }`}
             >
               Promociones
+            </span>
+          )}
+        </div>
+
+        {/* Arrow Right */}
+        <div
+          className={getItemClasses("exportar")}
+          onClick={() => handleItemClick("exportar")}
+        >
+          <svg
+            className={`w-5 h-5 ${
+              activeItem === "exportar" ? "text-white" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+          {isExpanded && (
+            <span
+              className={`ml-3 font-semibold ${
+                activeItem === "exportar" ? "text-white" : "text-slate-300"
+              }`}
+            >
+              Exportar
             </span>
           )}
         </div>

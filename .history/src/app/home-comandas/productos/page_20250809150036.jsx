@@ -61,9 +61,6 @@ function ProductosContent() {
   useEffect(() => {
     if (selectedMainCategory) {
       fetchSubCategories(selectedMainCategory);
-    } else {
-      // Clear subcategory selection when no main category is selected
-      setSelectedSubCategory("");
     }
   }, [selectedMainCategory]);
 
@@ -191,8 +188,8 @@ function ProductosContent() {
       price: "",
       discount: "0",
       description: "",
-      mainCategoryId: "",
-      subCategoryId: "",
+      mainCategoryId: selectedMainCategory,
+      subCategoryId: selectedSubCategory,
     });
     setEditingProduct(null);
   };

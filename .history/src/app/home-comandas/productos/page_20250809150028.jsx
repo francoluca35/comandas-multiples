@@ -61,9 +61,6 @@ function ProductosContent() {
   useEffect(() => {
     if (selectedMainCategory) {
       fetchSubCategories(selectedMainCategory);
-    } else {
-      // Clear subcategory selection when no main category is selected
-      setSelectedSubCategory("");
     }
   }, [selectedMainCategory]);
 
@@ -191,8 +188,8 @@ function ProductosContent() {
       price: "",
       discount: "0",
       description: "",
-      mainCategoryId: "",
-      subCategoryId: "",
+      mainCategoryId: selectedMainCategory,
+      subCategoryId: selectedSubCategory,
     });
     setEditingProduct(null);
   };
@@ -487,11 +484,7 @@ function ProductosContent() {
 
           {filteredProducts.length === 0 && !loading && (
             <div className="text-center text-slate-400 py-12">
-              <p className="text-xl">
-                {selectedMainCategory
-                  ? "No hay productos en esta categoría"
-                  : "No hay productos disponibles"}
-              </p>
+              <p className="text-xl">No hay productos en esta categoría</p>
               <p className="mt-2">Crea un nuevo producto para comenzar</p>
             </div>
           )}
