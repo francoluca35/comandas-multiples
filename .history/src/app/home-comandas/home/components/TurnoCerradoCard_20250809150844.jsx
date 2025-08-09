@@ -4,14 +4,7 @@ import { useTurno } from "../../../context/TurnoContext";
 import { useAuth } from "../../../context/AuthContext";
 
 function TurnoCard() {
-  const {
-    turnoAbierto,
-    turnoInfo,
-    abrirTurno,
-    cerrarTurno,
-    obtenerDuracionTurno,
-    loading,
-  } = useTurno();
+  const { turnoAbierto, turnoInfo, abrirTurno, cerrarTurno, obtenerDuracionTurno, loading } = useTurno();
   const { usuario } = useAuth();
   const [duracion, setDuracion] = useState("0 min");
 
@@ -58,9 +51,7 @@ function TurnoCard() {
     if (abrirTurno()) {
       console.log("Turno abierto exitosamente");
       // Mostrar mensaje de confirmación
-      alert(
-        "¡Turno abierto exitosamente! Ya puedes usar la aplicación completa."
-      );
+      alert("¡Turno abierto exitosamente! Ya puedes usar la aplicación completa.");
     } else {
       alert("Error al abrir el turno. Por favor, inténtalo de nuevo.");
     }

@@ -8,7 +8,7 @@ import DineroCard from "./components/DineroCard";
 import StockCard from "./components/StockCard";
 import DispositivosCard from "./components/DispositivosCard";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import { useTurno } from "@/app/context/TurnoContext";
+import { useTurno } from "../../../context/TurnoContext";
 
 function DashboardContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -34,6 +34,62 @@ function DashboardContent() {
             : "ml-16 sm:ml-20"
         }`}
       >
+        {/* Banner de turno abierto */}
+        <div className="bg-green-600 text-white p-3 shadow-lg">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center">
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="font-medium">Turno Abierto</span>
+            </div>
+            <div className="flex items-center">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span className="text-sm">{turnoInfo?.usuario}</span>
+            </div>
+            <div className="flex items-center">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm">
+                Abierto: {turnoInfo?.horaApertura}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Responsive padding and grid */}
         <div className="p-4">
           <div className="grid grid-cols-3 gap-3">

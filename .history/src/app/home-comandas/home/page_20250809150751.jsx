@@ -8,11 +8,10 @@ import DineroCard from "./components/DineroCard";
 import StockCard from "./components/StockCard";
 import DispositivosCard from "./components/DispositivosCard";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import { useTurno } from "@/app/context/TurnoContext";
+import { useTurno } from "../../../context/TurnoContext";
 
 function DashboardContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { turnoInfo } = useTurno();
 
   return (
     <div className="flex h-screen bg-slate-900 overflow-hidden">
