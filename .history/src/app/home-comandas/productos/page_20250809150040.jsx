@@ -61,9 +61,6 @@ function ProductosContent() {
   useEffect(() => {
     if (selectedMainCategory) {
       fetchSubCategories(selectedMainCategory);
-    } else {
-      // Clear subcategory selection when no main category is selected
-      setSelectedSubCategory("");
     }
   }, [selectedMainCategory]);
 
