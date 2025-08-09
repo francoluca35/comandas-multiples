@@ -10,37 +10,9 @@ function TurnoCard() {
     abrirTurno,
     cerrarTurno,
     obtenerDuracionTurno,
-    loading,
   } = useTurno();
   const { usuario } = useAuth();
   const [duracion, setDuracion] = useState("0 min");
-
-  // Mostrar loading mientras se carga el contexto
-  if (loading) {
-    return (
-      <div className="bg-gray-800 rounded-xl p-8 text-white shadow-2xl">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <svg
-              className="w-10 h-10 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Cargando...</h2>
-          <p className="text-gray-300">Verificando estado del turno</p>
-        </div>
-      </div>
-    );
-  }
 
   // Actualizar duración cada minuto cuando el turno esté abierto
   useEffect(() => {
@@ -57,12 +29,6 @@ function TurnoCard() {
   const handleAbrirTurno = () => {
     if (abrirTurno()) {
       console.log("Turno abierto exitosamente");
-      // Mostrar mensaje de confirmación
-      alert(
-        "¡Turno abierto exitosamente! Ya puedes usar la aplicación completa."
-      );
-    } else {
-      alert("Error al abrir el turno. Por favor, inténtalo de nuevo.");
     }
   };
 

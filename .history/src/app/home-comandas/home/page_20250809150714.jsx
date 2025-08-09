@@ -8,11 +8,10 @@ import DineroCard from "./components/DineroCard";
 import StockCard from "./components/StockCard";
 import DispositivosCard from "./components/DispositivosCard";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import { useTurno } from "@/app/context/TurnoContext";
+import { useTurno } from "../../../context/TurnoContext";
 
 function DashboardContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { turnoInfo } = useTurno();
 
   return (
     <div className="flex h-screen bg-slate-900 overflow-hidden">
@@ -76,8 +75,8 @@ function TurnoView() {
             : "ml-16 sm:ml-20"
         }`}
       >
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-md">
+        <div className="p-4">
+          <div className="max-w-md mx-auto">
             <TurnoCard />
           </div>
         </div>

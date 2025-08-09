@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useIngresos } from "@/hooks/useIngresos";
 import { useDineroActual } from "@/hooks/useDineroActual";
 import { useAlivios } from "@/hooks/useAlivios";
@@ -21,58 +21,62 @@ function DineroCard() {
   });
 
   // Calcular resumen de ingresos y egresos
-  const calcularResumen = useCallback(async () => {
-    try {
-      // Obtener ingresos totales
-      const totalIngresos = getTotalIngresos() || 0;
-      const efectivoTotal = getEfectivoTotal() || 0;
-      const virtualTotal = getVirtualTotal() || 0;
+  useEffect(() => {
+    const calcularResumen = () => {
+      try {
+        // Obtener ingresos totales
+        const totalIngresos = getTotalIngresos() || 0;
+        const efectivoTotal = getEfectivoTotal() || 0;
+        const virtualTotal = getVirtualTotal() || 0;
 
-      // Obtener egresos totales
-      const totalAlivios = getTotalAlivios() || 0;
-      const totalInversion = getInversionTotal() || 0;
-      const totalSueldos = getTotalSueldos() || 0;
+        // Obtener egresos totales
+        const totalAlivios = getTotalAlivios() || 0;
+        const totalInversion = getInversionTotal() || 0;
+        const totalSueldos = getTotalSueldos() || 0;
 
-      // Calcular ingresos por tipo (aproximado basado en caja actual)
-      const totalCaja = efectivoTotal + virtualTotal;
-      let ingresoEfectivo = 0;
-      let ingresoVirtual = 0;
+        // Calcular ingresos por tipo (aproximado basado en caja actual)
+        const totalCaja = efectivoTotal + virtualTotal;
+        let ingresoEfectivo = 0;
+        let ingresoVirtual = 0;
 
-      if (totalCaja > 0) {
-        // Distribuir ingresos proporcionalmente según la caja actual
-        const ratioEfectivo = efectivoTotal / totalCaja;
-        const ratioVirtual = virtualTotal / totalCaja;
+        if (totalCaja > 0) {
+          // Distribuir ingresos proporcionalmente según la caja actual
+          const ratioEfectivo = efectivoTotal / totalCaja;
+          const ratioVirtual = virtualTotal / totalCaja;
 
-        ingresoEfectivo = Math.round(totalIngresos * ratioEfectivo);
-        ingresoVirtual = Math.round(totalIngresos * ratioVirtual);
-      } else {
-        // Si no hay caja, distribuir 50/50
-        ingresoEfectivo = Math.round(totalIngresos * 0.5);
-        ingresoVirtual = Math.round(totalIngresos * 0.5);
+          ingresoEfectivo = Math.round(totalIngresos * ratioEfectivo);
+          ingresoVirtual = Math.round(totalIngresos * ratioVirtual);
+        } else {
+          // Si no hay caja, distribuir 50/50
+          ingresoEfectivo = Math.round(totalIngresos * 0.5);
+          ingresoVirtual = Math.round(totalIngresos * 0.5);
+        }
+
+        // Calcular egresos por tipo
+        const egresoEfectivo = totalAlivios; // Alivios son principalmente en efectivo
+        const egresoVirtual = totalInversion + totalSueldos; // Compras y sueldos son virtuales
+
+        setResumen({
+          ingresoEfectivo,
+          ingresoVirtual,
+          egresoEfectivo,
+          egresoVirtual,
+        });
+
+        console.log("💰 Resumen calculado:", {
+          ingresoEfectivo,
+          ingresoVirtual,
+          egresoEfectivo,
+          egresoVirtual,
+          totalIngresos,
+          totalCaja,
+        });
+      } catch (error) {
+        console.error("❌ Error calculando resumen:", error);
       }
+    };
 
-      // Calcular egresos por tipo
-      const egresoEfectivo = totalAlivios; // Alivios son principalmente en efectivo
-      const egresoVirtual = totalInversion + totalSueldos; // Compras y sueldos son virtuales
-
-      setResumen({
-        ingresoEfectivo,
-        ingresoVirtual,
-        egresoEfectivo,
-        egresoVirtual,
-      });
-
-      console.log("💰 Resumen calculado:", {
-        ingresoEfectivo,
-        ingresoVirtual,
-        egresoEfectivo,
-        egresoVirtual,
-        totalIngresos,
-        totalCaja,
-      });
-    } catch (error) {
-      console.error("❌ Error calculando resumen:", error);
-    }
+    calcularResumen();
   }, [
     getTotalIngresos,
     getEfectivoTotal,
@@ -81,11 +85,6 @@ function DineroCard() {
     getInversionTotal,
     getTotalSueldos,
   ]);
-
-  // Ejecutar cálculo al montar el componente
-  useEffect(() => {
-    calcularResumen();
-  }, [calcularResumen]);
 
   const handleNavigation = (route) => {
     window.location.href = `/home-comandas/${route}`;

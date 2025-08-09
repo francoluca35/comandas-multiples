@@ -34,6 +34,8 @@ function DashboardContent() {
             : "ml-16 sm:ml-20"
         }`}
       >
+
+
         {/* Responsive padding and grid */}
         <div className="p-4">
           <div className="grid grid-cols-3 gap-3">
