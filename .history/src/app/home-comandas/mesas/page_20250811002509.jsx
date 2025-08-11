@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
-import Sidebar, {
-  useSidebar,
-  SidebarProvider,
-} from "../home/components/Sidebar";
+import Sidebar, { useSidebar, SidebarProvider } from "../home/components/Sidebar";
 import { useTables } from "../../../hooks/useTables";
 import { useUserProfile } from "../../../hooks/useUserProfile";
 import { useTurno } from "../../context/TurnoContext";

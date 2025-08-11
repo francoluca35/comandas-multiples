@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
-import Sidebar, {
-  useSidebar,
-  SidebarProvider,
-} from "../home/components/Sidebar";
+import Sidebar, { useSidebar, SidebarProvider } from "../home/components/Sidebar";
 import { useTables } from "../../../hooks/useTables";
 import { useUserProfile } from "../../../hooks/useUserProfile";
 import { useTurno } from "../../context/TurnoContext";
@@ -16,7 +13,7 @@ import { useRolePermissions } from "../../../hooks/useRolePermissions";
 import CloudinaryImage from "../../../components/CloudinaryImage";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import Modal from "../../../components/ui/Modal";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import MesasManagement from "./components/MesasManagement";
 
 function MesasContent() {
