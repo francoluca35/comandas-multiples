@@ -93,6 +93,7 @@ function CocinaContent() {
     getPedidosListos,
   } = usePedidosCocina();
 
+
   // Cargar pedidos al montar el componente
   useEffect(() => {
     fetchPedidos();

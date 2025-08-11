@@ -579,7 +579,6 @@ export const useTables = () => {
     addProductsToTable,
     clearTable,
     markTableAsPaid,
-    markTableAsServed,
     generateTableNumber,
     isTableNumberExists,
     getTablesByLocation,

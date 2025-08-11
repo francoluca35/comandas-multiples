@@ -4,7 +4,6 @@ import {
   collection,
   addDoc,
   getDocs,
-  getDoc,
   updateDoc,
   doc,
   query,
@@ -138,28 +137,19 @@ export async function PUT(request) {
     if (nuevoEstado === "listo" && pedidoData.mesa) {
       try {
         // Buscar la mesa por número
-        const tablesRef = collection(
-          db,
-          `restaurantes/${restauranteId}/tables`
-        );
-        const mesaQuery = query(
-          tablesRef,
-          where("numero", "==", pedidoData.mesa)
-        );
+        const tablesRef = collection(db, `restaurantes/${restauranteId}/tables`);
+        const mesaQuery = query(tablesRef, where("numero", "==", pedidoData.mesa));
         const mesaSnapshot = await getDocs(mesaQuery);
-
+        
         if (!mesaSnapshot.empty) {
           const mesaDoc = mesaSnapshot.docs[0];
-          const mesaRef = doc(
-            db,
-            `restaurantes/${restauranteId}/tables/${mesaDoc.id}`
-          );
-
+          const mesaRef = doc(db, `restaurantes/${restauranteId}/tables/${mesaDoc.id}`);
+          
           await updateDoc(mesaRef, {
             estado: "servido",
             updatedAt: serverTimestamp(),
           });
-
+          
           console.log(`Mesa ${pedidoData.mesa} marcada como servida`);
         }
       } catch (mesaError) {

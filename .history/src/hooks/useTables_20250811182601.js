@@ -317,36 +317,6 @@ export const useTables = () => {
     }
   };
 
-  // Marcar mesa como servida (comida lista)
-  const markTableAsServed = async (tableId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const restaurantId = getRestaurantId();
-      const tableRef = doc(db, "restaurantes", restaurantId, "tables", tableId);
-
-      const updateFields = {
-        estado: "servido",
-        updatedAt: serverTimestamp(),
-      };
-
-      await updateDoc(tableRef, updateFields);
-
-      // Actualizar la mesa en el estado local
-      setTables((prev) =>
-        prev.map((table) =>
-          table.id === tableId ? { ...table, ...updateFields } : table
-        )
-      );
-    } catch (err) {
-      console.error("Error marking table as served:", err);
-      setError("Error al marcar la mesa como servida");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Generar número de mesa automático
   const generateTableNumber = () => {
     if (tables.length === 0) return "01";
@@ -579,7 +549,6 @@ export const useTables = () => {
     addProductsToTable,
     clearTable,
     markTableAsPaid,
-    markTableAsServed,
     generateTableNumber,
     isTableNumberExists,
     getTablesByLocation,

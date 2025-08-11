@@ -42,15 +42,6 @@ function VentasContent() {
       // Mesa ocupada - ver pedido existente
       setSelectedMesa(mesa);
       setCurrentView("mesaOcupada");
-    } else if (mesa.estado === "servido") {
-      // Mesa servida - ver pedido existente (puede agregar más productos o cobrar)
-      setSelectedMesa(mesa);
-      setCurrentView("mesaOcupada");
-    } else if (mesa.estado === "pagado") {
-      // Mesa pagada - mostrar información y opción de liberar
-      alert(
-        `Mesa ${mesa.numero} ya está pagada. Usa el botón verde para liberarla.`
-      );
     }
   };
 
@@ -70,8 +61,8 @@ function VentasContent() {
 
   const handleMesaCobrada = async (mesa) => {
     try {
-      // Marcar la mesa como pagada
-      await markTableAsPaid(mesa.id);
+      // Limpiar la mesa (resetear a estado libre)
+      await clearTable(mesa.id);
       // Recargar las mesas para actualizar el estado
       await fetchTables();
       // Volver a la vista de mesas
