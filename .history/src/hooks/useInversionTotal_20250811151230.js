@@ -82,18 +82,18 @@ export const useInversionTotal = () => {
             parseFloat(producto.costoTotal || producto.precio || 0) || 0;
           return sum + costoTotal;
         }, 0);
-        // console.log("💰 Total inversión calculado desde array:", {
-        //   productos: inversionTotal.productos,
-        //   total,
-        // });
+        console.log("💰 Total inversión calculado desde array:", {
+          productos: inversionTotal.productos,
+          total,
+        });
         return total;
       }
       // Si no, usar el inversionTotal del estado
       const total = parseFloat(inversionTotal.inversionTotal) || 0;
-      // console.log("💰 Total inversión desde estado:", {
-      //   inversionTotal,
-      //   total,
-      // });
+      console.log("💰 Total inversión desde estado:", {
+        inversionTotal,
+        total,
+      });
       return total;
     } catch (error) {
       console.error("❌ Error calculando inversión total:", error);
