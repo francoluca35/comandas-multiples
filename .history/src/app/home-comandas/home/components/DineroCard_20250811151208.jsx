@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useIngresos } from "@/hooks/useIngresos";
 import { useDineroActual } from "@/hooks/useDineroActual";
 import { useAlivios } from "@/hooks/useAlivios";
@@ -14,8 +14,15 @@ function DineroCard() {
   const { getInversionTotal, inversionTotal } = useInversionTotal();
   const { getTotalSueldos, sueldos } = useSueldos();
 
-  // Calcular resumen de ingresos y egresos usando useMemo
-  const resumen = useMemo(() => {
+  const [resumen, setResumen] = useState({
+    ingresoEfectivo: 0,
+    ingresoVirtual: 0,
+    egresoEfectivo: 0,
+    egresoVirtual: 0,
+  });
+
+  // Calcular resumen de ingresos y egresos
+  const calcularResumen = useCallback(async () => {
     try {
       // Obtener ingresos totales
       const totalIngresos = getTotalIngresos() || 0;
@@ -49,40 +56,37 @@ function DineroCard() {
       const egresoEfectivo = totalAlivios; // Alivios son principalmente en efectivo
       const egresoVirtual = totalInversion + totalSueldos; // Compras y sueldos son virtuales
 
-      const resultado = {
+      setResumen({
         ingresoEfectivo,
         ingresoVirtual,
         egresoEfectivo,
         egresoVirtual,
-      };
+      });
 
       console.log("💰 Resumen calculado:", {
-        ...resultado,
+        ingresoEfectivo,
+        ingresoVirtual,
+        egresoEfectivo,
+        egresoVirtual,
         totalIngresos,
         totalCaja,
       });
-
-      return resultado;
     } catch (error) {
       console.error("❌ Error calculando resumen:", error);
-      return {
-        ingresoEfectivo: 0,
-        ingresoVirtual: 0,
-        egresoEfectivo: 0,
-        egresoVirtual: 0,
-      };
     }
   }, [
-    // Depender de valores primitivos específicos en lugar de objetos completos
-    ingresos?.totalIngresos,
-    dineroActual?.efectivo,
-    dineroActual?.virtual,
-    alivios?.totalAlivios,
-    alivios?.alivios?.length,
-    inversionTotal?.inversionTotal,
-    inversionTotal?.productos?.length,
-    sueldos?.length,
+    // Depender de los datos directamente en lugar de las funciones
+    ingresos,
+    dineroActual,
+    alivios,
+    inversionTotal,
+    sueldos,
   ]);
+
+  // Ejecutar cálculo cuando cambien los datos
+  useEffect(() => {
+    calcularResumen();
+  }, [calcularResumen]);
 
   const handleNavigation = (route) => {
     window.location.href = `/home-comandas/${route}`;

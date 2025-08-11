@@ -215,15 +215,15 @@ export const useAlivios = () => {
           const monto = parseFloat(alivio.monto || 0) || 0;
           return sum + monto;
         }, 0);
-        // console.log("💰 Total alivios calculado desde array:", {
-        //   alivios: alivios.alivios,
-        //   total,
-        // });
+        console.log("💰 Total alivios calculado desde array:", {
+          alivios: alivios.alivios,
+          total,
+        });
         return total;
       }
       // Si no, usar el totalAlivios del estado
       const total = parseFloat(alivios.totalAlivios) || 0;
-      // console.log("💰 Total alivios desde estado:", { alivios, total });
+      console.log("💰 Total alivios desde estado:", { alivios, total });
       return total;
     } catch (error) {
       console.error("❌ Error calculando total alivios:", error);

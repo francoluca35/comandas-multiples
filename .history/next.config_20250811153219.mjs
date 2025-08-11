@@ -1,17 +1,17 @@
-import withPWA from "next-pwa";
+import withPWA from 'next-pwa';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withPWA({
-  dest: "public",
+  dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     {
       urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
+      handler: 'NetworkFirst',
       options: {
-        cacheName: "offlineCache",
+        cacheName: 'offlineCache',
         expiration: {
           maxEntries: 200,
         },
