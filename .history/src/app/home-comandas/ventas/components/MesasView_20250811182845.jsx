@@ -345,27 +345,6 @@ function MesasView({ onMesaClick }) {
                 </svg>
               </button>
             )}
-            {mesa.estado === "servido" && (
-              <button
-                onClick={(e) => handleMesaServida(mesa, e)}
-                className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-full transition-all duration-200 transform hover:scale-110 shadow-lg z-10"
-                title="Confirmar Servido"
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </button>
-            )}
           </div>
         ))}
       </div>

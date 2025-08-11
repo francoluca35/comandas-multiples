@@ -7,6 +7,7 @@ import Sidebar, {
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
 import usePedidosCocina from "../../../hooks/usePedidosCocina";
+import { useTables } from "../../../hooks/useTables";
 
 // Componente para mostrar un pedido individual
 const PedidoCard = ({ pedido, onStatusChange, tipo }) => {
@@ -92,6 +93,7 @@ function CocinaContent() {
     getPedidosEnPreparacion,
     getPedidosListos,
   } = usePedidosCocina();
+  const { markTableAsServed } = useTables();
 
   // Cargar pedidos al montar el componente
   useEffect(() => {
@@ -103,8 +105,14 @@ function CocinaContent() {
     try {
       if (nuevoEstado === "listo") {
         // Cambiar estado a "listo" (se mueve a "Pedidos Hechos")
-        // La API automáticamente actualizará el estado de la mesa a "servido"
         await actualizarEstadoPedido(pedidoId, "listo");
+
+        // Buscar el pedido para obtener la mesa
+        const pedido = pedidos.find((p) => p.id === pedidoId);
+        if (pedido && pedido.mesa) {
+          // Marcar la mesa como servida
+          await markTableAsServed(pedido.mesa);
+        }
       } else if (nuevoEstado === "realizado") {
         // Marcar pedido como completamente realizado (se elimina)
         await actualizarEstadoPedido(pedidoId, "realizado");

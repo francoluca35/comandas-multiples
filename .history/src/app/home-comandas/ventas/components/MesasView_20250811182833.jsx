@@ -66,40 +66,6 @@ function MesasView({ onMesaClick }) {
     }
   };
 
-  const handleMesaServida = async (mesa, e) => {
-    e.stopPropagation(); // Evitar que se active el click de la mesa
-
-    if (
-      !confirm(
-        `¿Confirmar que la comida de la Mesa ${mesa.numero} ya fue servida?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      // Actualizar la mesa en Firestore para marcarla como servida
-      const mesaRef = doc(
-        db,
-        `restaurantes/${getRestaurantId()}/tables/${mesa.id}`
-      );
-
-      await updateDoc(mesaRef, {
-        estado: "servido",
-        updatedAt: new Date(),
-      });
-
-      console.log(`Mesa ${mesa.numero} marcada como servida`);
-      alert(`Mesa ${mesa.numero} marcada como servida`);
-
-      // Recargar las mesas para mostrar los cambios
-      fetchTables();
-    } catch (error) {
-      console.error("Error al marcar mesa como servida:", error);
-      alert("Error al marcar la mesa como servida. Inténtalo de nuevo.");
-    }
-  };
-
   const handleEliminarComandas = async (mesa, e) => {
     e.stopPropagation(); // Evitar que se active el click de la mesa
 
@@ -341,27 +307,6 @@ function MesasView({ onMesaClick }) {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </button>
-            )}
-            {mesa.estado === "servido" && (
-              <button
-                onClick={(e) => handleMesaServida(mesa, e)}
-                className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-full transition-all duration-200 transform hover:scale-110 shadow-lg z-10"
-                title="Confirmar Servido"
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </button>

@@ -92,6 +92,7 @@ function CocinaContent() {
     getPedidosEnPreparacion,
     getPedidosListos,
   } = usePedidosCocina();
+  const { markTableAsServed } = useTables();
 
   // Cargar pedidos al montar el componente
   useEffect(() => {

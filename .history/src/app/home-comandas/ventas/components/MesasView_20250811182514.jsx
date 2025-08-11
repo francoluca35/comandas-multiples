@@ -66,40 +66,6 @@ function MesasView({ onMesaClick }) {
     }
   };
 
-  const handleMesaServida = async (mesa, e) => {
-    e.stopPropagation(); // Evitar que se active el click de la mesa
-
-    if (
-      !confirm(
-        `¿Confirmar que la comida de la Mesa ${mesa.numero} ya fue servida?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      // Actualizar la mesa en Firestore para marcarla como servida
-      const mesaRef = doc(
-        db,
-        `restaurantes/${getRestaurantId()}/tables/${mesa.id}`
-      );
-
-      await updateDoc(mesaRef, {
-        estado: "servido",
-        updatedAt: new Date(),
-      });
-
-      console.log(`Mesa ${mesa.numero} marcada como servida`);
-      alert(`Mesa ${mesa.numero} marcada como servida`);
-
-      // Recargar las mesas para mostrar los cambios
-      fetchTables();
-    } catch (error) {
-      console.error("Error al marcar mesa como servida:", error);
-      alert("Error al marcar la mesa como servida. Inténtalo de nuevo.");
-    }
-  };
-
   const handleEliminarComandas = async (mesa, e) => {
     e.stopPropagation(); // Evitar que se active el click de la mesa
 
@@ -143,8 +109,6 @@ function MesasView({ onMesaClick }) {
         return "bg-green-600 hover:bg-green-500";
       case "ocupado":
         return "bg-yellow-600 hover:bg-yellow-500";
-      case "servido":
-        return "bg-red-600 hover:bg-red-500";
       case "pagado":
         return "bg-green-600 hover:bg-green-500";
       default:
@@ -157,9 +121,7 @@ function MesasView({ onMesaClick }) {
       case "libre":
         return "Libre";
       case "ocupado":
-        return "En Cocina";
-      case "servido":
-        return "Listo";
+        return "Con Pedido";
       case "pagado":
         return "Pagado";
       default:
@@ -318,50 +280,6 @@ function MesasView({ onMesaClick }) {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            )}
-
-            {/* Botón Liberar Mesa - Solo para mesas pagadas */}
-            {mesa.estado === "pagado" && (
-              <button
-                onClick={(e) => handleLiberarMesaPagada(mesa, e)}
-                className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded-full transition-all duration-200 transform hover:scale-110 shadow-lg z-10"
-                title="Liberar Mesa"
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </button>
-            )}
-            {mesa.estado === "servido" && (
-              <button
-                onClick={(e) => handleMesaServida(mesa, e)}
-                className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-full transition-all duration-200 transform hover:scale-110 shadow-lg z-10"
-                title="Confirmar Servido"
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </button>

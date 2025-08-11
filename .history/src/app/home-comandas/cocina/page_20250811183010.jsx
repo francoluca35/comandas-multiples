@@ -7,6 +7,7 @@ import Sidebar, {
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
 import usePedidosCocina from "../../../hooks/usePedidosCocina";
+import { useTables } from "../../../hooks/useTables";
 
 // Componente para mostrar un pedido individual
 const PedidoCard = ({ pedido, onStatusChange, tipo }) => {
@@ -92,6 +93,7 @@ function CocinaContent() {
     getPedidosEnPreparacion,
     getPedidosListos,
   } = usePedidosCocina();
+  const { markTableAsServed } = useTables();
 
   // Cargar pedidos al montar el componente
   useEffect(() => {
