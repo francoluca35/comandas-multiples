@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+
 import Sidebar, {
   useSidebar,
   SidebarProvider,
@@ -16,7 +15,9 @@ import { useRolePermissions } from "../../../hooks/useRolePermissions";
 import CloudinaryImage from "../../../components/CloudinaryImage";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import Modal from "../../../components/ui/Modal";
-import toast from "react-hot-toast";
+
+import { toast } from "react-hot-toast";
+
 import MesasManagement from "./components/MesasManagement";
 
 function MesasContent() {
@@ -49,32 +50,32 @@ function MesasContent() {
 
 const MesasPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessMesas"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder a la gestión de mesas.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores pueden gestionar las mesas del
-                restaurante.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessMesas"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a la gestión de mesas.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo los administradores pueden gestionar las mesas del
+                  restaurante.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <div className="min-h-screen bg-slate-900 text-white">
+          }
+        >
           <MesasContent />
-        </div>
-      </RoleGuard>
-    </RestaurantGuard>
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 

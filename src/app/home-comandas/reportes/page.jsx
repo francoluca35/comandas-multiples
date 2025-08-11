@@ -6,8 +6,8 @@ import Sidebar, {
 } from "../home/components/Sidebar";
 import ReportesGenerator from "./components/ReportesGenerator";
 import ReportStats from "./components/ReportStats";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
+import { SimpleRoleGuard } from "../../../components/SimpleRoleGuard";
 import { useUserProfile } from "../../../hooks/useUserProfile";
 
 import { useMensajesUsuario } from "../../../hooks/useMensajesUsuario";
@@ -69,32 +69,32 @@ function ReportesContent() {
 
 const ReportesPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessReportes"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder a los reportes.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores pueden ver los reportes del
-                restaurante.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessReportes"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a los reportes.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo los administradores pueden generar reportes del
+                  restaurante.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <SidebarProvider>
+          }
+        >
           <ReportesContent />
-        </SidebarProvider>
-      </RoleGuard>
-    </RestaurantGuard>
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 
