@@ -1,19 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
-import Sidebar, { SidebarProvider } from "../home/components/Sidebar";
-import { useTables } from "../../../../hooks/useTables";
-import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { useTurno } from "../../../context/TurnoContext";
-import { useMensajesUsuario } from "../../../../hooks/useMensajesUsuario";
-import { useErrorHandler } from "../../../../hooks/useErrorHandler";
-import { useRolePermissions } from "../../../../hooks/useRolePermissions";
-import CloudinaryImage from "../../../../components/CloudinaryImage";
-import LoadingSpinner from "../../../../components/ui/LoadingSpinner";
-import Modal from "../../../../components/ui/Modal";
-import { toast } from "sonner";
+import Sidebar, {
+  useSidebar,
+  SidebarProvider,
+} from "../home/components/Sidebar";
 import MesasManagement from "./components/MesasManagement";
 
 function MesasContent() {
@@ -67,9 +60,11 @@ const MesasPage = () => {
           </div>
         }
       >
-        <div className="min-h-screen bg-slate-900 text-white">
-          <MesasContent />
-        </div>
+        <SidebarProvider>
+          <div className="min-h-screen bg-slate-900 text-white">
+            <MesasContent />
+          </div>
+        </SidebarProvider>
       </RoleGuard>
     </RestaurantGuard>
   );

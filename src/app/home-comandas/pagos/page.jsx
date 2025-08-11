@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
 import Sidebar, {
@@ -10,17 +10,6 @@ import DineroActual from "./components/DineroActual";
 import Egresos from "./components/Egresos";
 import Ingresos from "./components/Ingresos";
 import Rendimiento from "./components/Rendimiento";
-import { useDineroActual } from "../../../../hooks/useDineroActual";
-import { useIngresos } from "../../../../hooks/useIngresos";
-import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { useTurno } from "../../../context/TurnoContext";
-import { useMensajesUsuario } from "../../../../hooks/useMensajesUsuario";
-import { useErrorHandler } from "../../../../hooks/useErrorHandler";
-import { useRolePermissions } from "../../../../hooks/useRolePermissions";
-import CloudinaryImage from "../../../../components/CloudinaryImage";
-import LoadingSpinner from "../../../../components/ui/LoadingSpinner";
-import Modal from "../../../../components/ui/Modal";
-import { toast } from "sonner";
 
 function PagosContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
