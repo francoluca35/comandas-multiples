@@ -1,7 +1,8 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
+import { SimpleRoleGuard } from "../../../components/SimpleRoleGuard";
 import Sidebar, {
   useSidebar,
   SidebarProvider,
@@ -10,17 +11,17 @@ import DineroActual from "./components/DineroActual";
 import Egresos from "./components/Egresos";
 import Ingresos from "./components/Ingresos";
 import Rendimiento from "./components/Rendimiento";
-import { useDineroActual } from "../../../../hooks/useDineroActual";
-import { useIngresos } from "../../../../hooks/useIngresos";
-import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { useTurno } from "../../../context/TurnoContext";
-import { useMensajesUsuario } from "../../../../hooks/useMensajesUsuario";
-import { useErrorHandler } from "../../../../hooks/useErrorHandler";
-import { useRolePermissions } from "../../../../hooks/useRolePermissions";
-import CloudinaryImage from "../../../../components/CloudinaryImage";
-import LoadingSpinner from "../../../../components/ui/LoadingSpinner";
-import Modal from "../../../../components/ui/Modal";
-import { toast } from "sonner";
+import { useDineroActual } from "../../../hooks/useDineroActual";
+import { useIngresos } from "../../../hooks/useIngresos";
+import { useUserProfile } from "../../../hooks/useUserProfile";
+import { useTurno } from "../../context/TurnoContext";
+import { useMensajesUsuario } from "../../../hooks/useMensajesUsuario";
+import { useErrorHandler } from "../../../hooks/useErrorHandler";
+import { useRolePermissions } from "../../../hooks/useRolePermissions";
+import CloudinaryImage from "../../../components/CloudinaryImage";
+import LoadingSpinner from "../../../components/ui/LoadingSpinner";
+import Modal from "../../../components/ui/Modal";
+import { toast } from "react-hot-toast";
 
 function PagosContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -118,34 +119,32 @@ function PagosContent() {
 
 const PagosPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessPagos"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder a la gestión de pagos.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores pueden gestionar los pagos del
-                restaurante.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessPagos"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a la gestión de pagos.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo los administradores pueden gestionar los pagos del
+                  restaurante.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <div className="min-h-screen bg-slate-900 text-white">
-          <SidebarProvider>
-            <PagosContent />
-          </SidebarProvider>
-        </div>
-      </RoleGuard>
-    </RestaurantGuard>
+          }
+        >
+          <PagosContent />
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 

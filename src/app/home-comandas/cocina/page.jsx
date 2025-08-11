@@ -4,8 +4,8 @@ import Sidebar, {
   useSidebar,
   SidebarProvider,
 } from "../home/components/Sidebar";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
+import { SimpleRoleGuard } from "../../../components/SimpleRoleGuard";
 import usePedidosCocina from "../../../hooks/usePedidosCocina";
 
 // Componente para mostrar un pedido individual
@@ -266,32 +266,31 @@ function CocinaContent() {
 
 const CocinaPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessCocina"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder a la vista de cocina.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores y personal de cocina pueden ver esta
-                vista.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessCocina"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a la vista de cocina.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo el personal de cocina puede acceder a esta vista.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <SidebarProvider>
+          }
+        >
           <CocinaContent />
-        </SidebarProvider>
-      </RoleGuard>
-    </RestaurantGuard>
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 

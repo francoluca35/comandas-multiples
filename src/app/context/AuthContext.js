@@ -71,15 +71,14 @@ export const AuthProvider = ({ children }) => {
       const usuarioLocal = localStorage.getItem("usuario");
       const rolLocal = localStorage.getItem("rol");
 
-      console.log("🔍 Verificando restaurante (sin Firebase Auth):", {
+      console.log("🔍 AuthContext - Verificando restaurante:", {
         restauranteId,
         usuarioLocal,
         rolLocal,
         currentPath,
-        isRestaurantSystem,
       });
 
-      if (restauranteId && usuarioLocal) {
+      if (restauranteId && usuarioLocal && rolLocal) {
         setUsuario({
           usuario: usuarioLocal,
           rol: rolLocal,
@@ -87,12 +86,13 @@ export const AuthProvider = ({ children }) => {
           tipo: "restaurante",
         });
         setRol(rolLocal);
-        console.log(
-          "✅ Usuario de restaurante autenticado (sin Firebase Auth):",
-          { usuario: usuarioLocal, rol: rolLocal, restauranteId }
-        );
+        console.log("✅ AuthContext - Usuario de restaurante autenticado:", {
+          usuario: usuarioLocal,
+          rol: rolLocal,
+          restauranteId,
+        });
       } else {
-        console.log("❌ Datos de restaurante faltantes:", {
+        console.log("❌ AuthContext - Datos de restaurante faltantes:", {
           restauranteId: !!restauranteId,
           usuarioLocal: !!usuarioLocal,
           rolLocal: !!rolLocal,
@@ -122,48 +122,19 @@ export const AuthProvider = ({ children }) => {
     // También escuchar cambios en Firebase Auth
     const unsubscribe = onAuthStateChanged(auth, checkAuth);
 
-    // Escuchar cambios en localStorage para restaurantes
+    // Escuchar cambios en localStorage para restaurantes (solo entre tabs)
     const handleStorageChange = (e) => {
       if (e.key === "usuario" || e.key === "rol" || e.key === "restauranteId") {
-        console.log("🔄 localStorage cambió, re-ejecutando checkAuth");
-        checkAuth();
-      }
-    };
-
-    // Escuchar cambios en localStorage (evento storage solo funciona entre tabs)
-    window.addEventListener("storage", handleStorageChange);
-
-    // Crear un observador personalizado para cambios en localStorage
-    const originalSetItem = localStorage.setItem;
-    const originalRemoveItem = localStorage.removeItem;
-
-    localStorage.setItem = function (key, value) {
-      originalSetItem.call(this, key, value);
-      if (key === "usuario" || key === "rol" || key === "restauranteId") {
-        console.log(
-          "🔄 localStorage.setItem detectado, re-ejecutando checkAuth"
-        );
-        setTimeout(checkAuth, 100); // Pequeño delay para asegurar que el valor esté disponible
-      }
-    };
-
-    localStorage.removeItem = function (key) {
-      originalRemoveItem.call(this, key);
-      if (key === "usuario" || key === "rol" || key === "restauranteId") {
-        console.log(
-          "🔄 localStorage.removeItem detectado, re-ejecutando checkAuth"
-        );
+        console.log("🔄 AuthContext - Storage change detectado");
         setTimeout(checkAuth, 100);
       }
     };
 
+    window.addEventListener("storage", handleStorageChange);
+
     return () => {
       unsubscribe();
       window.removeEventListener("storage", handleStorageChange);
-
-      // Restaurar métodos originales de localStorage
-      localStorage.setItem = originalSetItem;
-      localStorage.removeItem = originalRemoveItem;
     };
   }, [checkAuth]);
 

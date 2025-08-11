@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
+import { SimpleRoleGuard } from "../../../components/SimpleRoleGuard";
 import { useProducts } from "../../../hooks/useProducts";
 import Sidebar, {
   useSidebar,
@@ -812,34 +812,32 @@ function ProductosContent() {
 
 const ProductosPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessProductos"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder a la gestión de productos.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores pueden gestionar productos del
-                restaurante.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessProductos"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a la gestión de productos.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo los administradores pueden gestionar productos del
+                  restaurante.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <div className="min-h-screen bg-slate-900 text-white">
-          <SidebarProvider>
-            <ProductosContent />
-          </SidebarProvider>
-        </div>
-      </RoleGuard>
-    </RestaurantGuard>
+          }
+        >
+          <ProductosContent />
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 

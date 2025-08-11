@@ -1,10 +1,5 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useUserProfile } from "../../../../hooks/useUserProfile";
-import { useRole } from "../../../context/RoleContext";
-import { useTurno } from "../../../context/TurnoContext";
 import CloudinaryImage from "../../../../components/CloudinaryImage";
 
 const SidebarContext = createContext();
@@ -31,81 +26,104 @@ export const SidebarProvider = ({ children }) => {
   );
 };
 
-function Sidebar() {
-  const { isExpanded, toggleSidebar } = useSidebar();
+// Hook personalizado para navegación
+const useNavigation = () => {
+  const [currentPath, setCurrentPath] = useState("");
   const [activeItem, setActiveItem] = useState("home");
-  const pathname = usePathname();
-  const router = useRouter();
-  const { userImage, userInitials } = useUserProfile();
-  const { permissions, roleInfo } = useRole();
-  const { cerrarTurno } = useTurno();
 
   useEffect(() => {
-    if (pathname === "/home-comandas/home" || pathname === "/home-comandas") {
-      setActiveItem("home");
-    } else if (pathname === "/home-comandas/ventas") {
-      setActiveItem("mesas");
-    } else if (pathname === "/home-comandas/productos") {
-      setActiveItem("productos");
-    } else if (pathname === "/home-comandas/mesas") {
-      setActiveItem("gestionMesas");
-    } else if (pathname === "/home-comandas/inventario") {
-      setActiveItem("inventario");
-    } else if (pathname === "/home-comandas/pagos") {
-      setActiveItem("pagos");
-    } else if (pathname === "/home-comandas/reportes") {
-      setActiveItem("reportes");
-    } else if (pathname === "/home-comandas/cocina") {
-      setActiveItem("cocina");
-    } else {
-      setActiveItem("home");
-    }
-  }, [pathname]);
+    const updatePath = () => {
+      const path = window.location.pathname;
+      setCurrentPath(path);
 
-  const handleItemClick = (itemId, route) => {
-    setActiveItem(itemId);
-    if (route) {
-      router.push(route);
-    }
+      // Determinar el item activo basado en la ruta
+      if (path === "/home-comandas/home" || path === "/home-comandas") {
+        setActiveItem("home");
+      } else if (path === "/home-comandas/ventas") {
+        setActiveItem("ventas");
+      } else if (path === "/home-comandas/productos") {
+        setActiveItem("productos");
+      } else if (path === "/home-comandas/mesas") {
+        setActiveItem("mesas");
+      } else if (path === "/home-comandas/inventario") {
+        setActiveItem("inventario");
+      } else if (path === "/home-comandas/pagos") {
+        setActiveItem("pagos");
+      } else if (path === "/home-comandas/reportes") {
+        setActiveItem("reportes");
+      } else if (path === "/home-comandas/cocina") {
+        setActiveItem("cocina");
+      } else {
+        setActiveItem("home");
+      }
+    };
+
+    // Actualizar inmediatamente
+    updatePath();
+
+    // Escuchar cambios de URL
+    const handleUrlChange = () => {
+      updatePath();
+    };
+
+    window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("hashchange", handleUrlChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("hashchange", handleUrlChange);
+    };
+  }, []);
+
+  const navigate = (route) => {
+    console.log("🔄 Navegando a:", route);
+    window.location.href = route;
   };
 
-  const handleLogoClick = async () => {
-    if (isExpanded) {
-      // Si el sidebar está abierto, cerrar turno y cerrar sesión
-      try {
-        await cerrarTurno();
-      } catch (error) {
-        console.log("Error al cerrar turno:", error);
-      }
+  return { currentPath, activeItem, navigate };
+};
 
-      // Solo limpiar información de sesión del usuario, no todo el localStorage
+function Sidebar() {
+  const { isExpanded, toggleSidebar } = useSidebar();
+  const { currentPath, activeItem, navigate } = useNavigation();
+
+  // Obtener datos del usuario desde localStorage
+  const usuario =
+    typeof window !== "undefined" ? localStorage.getItem("usuario") : null;
+  const rol =
+    typeof window !== "undefined" ? localStorage.getItem("rol") : null;
+  const userImage =
+    typeof window !== "undefined" ? localStorage.getItem("userImage") : null;
+  const userInitials = usuario ? usuario.charAt(0).toUpperCase() : "U";
+
+  const handleItemClick = (itemId, route) => {
+    console.log("🔄 Sidebar - Navegando a:", { itemId, route, currentPath });
+    navigate(route);
+  };
+
+  const handleLogoClick = () => {
+    if (isExpanded) {
+      // Si el sidebar está abierto, cerrar sesión
       localStorage.removeItem("usuario");
       localStorage.removeItem("rol");
       localStorage.removeItem("usuarioId");
       localStorage.removeItem("userImage");
       localStorage.removeItem("imagen");
-      router.push("/home-comandas/login");
+      navigate("/home-comandas/login");
     } else {
       // Si está cerrado, abrir el sidebar
       toggleSidebar();
     }
   };
 
-  const handleLogout = async () => {
-    // Cerrar turno antes de cerrar sesión
-    try {
-      await cerrarTurno();
-    } catch (error) {
-      console.log("Error al cerrar turno:", error);
-    }
-
-    // Solo limpiar información de sesión del usuario, no todo el localStorage
+  const handleLogout = () => {
+    // Limpiar información de sesión
     localStorage.removeItem("usuario");
     localStorage.removeItem("rol");
     localStorage.removeItem("usuarioId");
     localStorage.removeItem("userImage");
     localStorage.removeItem("imagen");
-    router.push("/home-comandas/login");
+    navigate("/home-comandas/login");
   };
 
   const getItemClasses = (itemId) => {
@@ -123,6 +141,28 @@ function Sidebar() {
     } else {
       return `${baseClasses} text-slate-400 hover:text-white hover:bg-slate-700/30 rounded-lg sm:rounded-xl backdrop-blur-sm border border-transparent hover:border-slate-600/30 transition-all duration-300`;
     }
+  };
+
+  // Función para verificar permisos basada en rol
+  const hasPermission = (permission) => {
+    const permissions = {
+      admin: [
+        "canAccessHome",
+        "canAccessVentas",
+        "canAccessMesas",
+        "canAccessProductos",
+        "canAccessPagos",
+        "canAccessInventario",
+        "canAccessReportes",
+        "canAccessCocina",
+      ],
+      mesero: ["canAccessHome", "canAccessVentas"],
+      cocina: ["canAccessHome", "canAccessCocina"],
+      usuario: ["canAccessHome", "canAccessVentas"],
+    };
+
+    const userPermissions = permissions[rol?.toLowerCase()] || [];
+    return userPermissions.includes(permission);
   };
 
   return (
@@ -158,15 +198,19 @@ function Sidebar() {
       </div>
 
       {/* Indicador de rol del usuario */}
-      {isExpanded && roleInfo && (
-        <div
-          className={`px-3 py-2 rounded-lg ${roleInfo.bgColor} ${roleInfo.borderColor} border mb-3 w-full text-center`}
-        >
-          <div className={`text-sm font-semibold ${roleInfo.color}`}>
-            {roleInfo.name}
+      {isExpanded && rol && (
+        <div className="px-3 py-2 rounded-lg bg-blue-500/20 border border-blue-500/30 mb-3 w-full text-center">
+          <div className="text-sm font-semibold text-blue-400">
+            {rol.toUpperCase()}
           </div>
           <div className="text-xs text-slate-400 mt-1">
-            {roleInfo.description}
+            {rol === "admin"
+              ? "Administrador"
+              : rol === "mesero"
+              ? "Mesero"
+              : rol === "cocina"
+              ? "Cocina"
+              : "Usuario"}
           </div>
         </div>
       )}
@@ -174,7 +218,7 @@ function Sidebar() {
       {/* Navigation Icons */}
       <div className="flex flex-col items-center space-y-2 sm:space-y-3 w-full px-2 sm:px-3 flex-1 overflow-y-auto">
         {/* Home - Todos los roles pueden acceder */}
-        {permissions.canAccessHome && (
+        {hasPermission("canAccessHome") && (
           <div
             className={getItemClasses("home")}
             onClick={() => handleItemClick("home", "/home-comandas/home")}
@@ -198,53 +242,25 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Ventas - Solo ADMIN, MESERO y COCINA */}
-        {permissions.canAccessVentas && (
+        {/* Ventas */}
+        {hasPermission("canAccessVentas") && (
           <div
-            className={getItemClasses("mesas")}
-            onClick={() => handleItemClick("mesas", "/home-comandas/ventas")}
+            className={getItemClasses("ventas")}
+            onClick={() => handleItemClick("ventas", "/home-comandas/ventas")}
           >
             <svg
               className={`w-5 h-5 ${
-                activeItem === "mesas" ? "text-white" : ""
+                activeItem === "ventas" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              {/* Mesa */}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 8h12M6 8v8M18 8v8"
-              />
-              {/* Pata central de la mesa */}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v8"
-              />
-              {/* Silla izquierda */}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 10c0-1.1.9-2 2-2s2 .9 2 2v4c0 1.1-.9 2-2 2s-2-.9-2-2v-4z"
-              />
-              {/* Silla derecha */}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 10c0-1.1.9-2 2-2s2 .9 2 2v4c0 1.1-.9 2-2 2s-2-.9-2-2v-4z"
-              />
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
             </svg>
             {isExpanded && (
               <span
                 className={`ml-3 font-semibold ${
-                  activeItem === "mesas" ? "text-white" : "text-slate-300"
+                  activeItem === "ventas" ? "text-white" : "text-slate-300"
                 }`}
               >
                 Ventas
@@ -253,45 +269,35 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Gestión Mesas - Solo ADMIN */}
-        {permissions.canAccessMesas && (
+        {/* Mesas - Solo admin */}
+        {hasPermission("canAccessMesas") && (
           <div
-            className={getItemClasses("gestionMesas")}
-            onClick={() =>
-              handleItemClick("gestionMesas", "/home-comandas/mesas")
-            }
+            className={getItemClasses("mesas")}
+            onClick={() => handleItemClick("mesas", "/home-comandas/mesas")}
           >
             <svg
               className={`w-5 h-5 ${
-                activeItem === "gestionMesas" ? "text-white" : ""
+                activeItem === "mesas" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-              />
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {isExpanded && (
               <span
                 className={`ml-3 font-semibold ${
-                  activeItem === "gestionMesas"
-                    ? "text-white"
-                    : "text-slate-300"
+                  activeItem === "mesas" ? "text-white" : "text-slate-300"
                 }`}
               >
-                Gestión Mesas
+                Mesas
               </span>
             )}
           </div>
         )}
 
-        {/* Productos - Solo ADMIN */}
-        {permissions.canAccessProductos && (
+        {/* Productos - Solo admin */}
+        {hasPermission("canAccessProductos") && (
           <div
             className={getItemClasses("productos")}
             onClick={() =>
@@ -302,16 +308,10 @@ function Sidebar() {
               className={`w-5 h-5 ${
                 activeItem === "productos" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              />
+              <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
             </svg>
             {isExpanded && (
               <span
@@ -325,8 +325,8 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Pagos - Solo ADMIN */}
-        {permissions.canAccessPagos && (
+        {/* Pagos - Solo admin */}
+        {hasPermission("canAccessPagos") && (
           <div
             className={getItemClasses("pagos")}
             onClick={() => handleItemClick("pagos", "/home-comandas/pagos")}
@@ -335,16 +335,10 @@ function Sidebar() {
               className={`w-5 h-5 ${
                 activeItem === "pagos" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
             </svg>
             {isExpanded && (
               <span
@@ -358,8 +352,8 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Inventario - Solo ADMIN */}
-        {permissions.canAccessInventario && (
+        {/* Inventario - Solo admin */}
+        {hasPermission("canAccessInventario") && (
           <div
             className={getItemClasses("inventario")}
             onClick={() =>
@@ -370,16 +364,10 @@ function Sidebar() {
               className={`w-5 h-5 ${
                 activeItem === "inventario" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              />
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
             </svg>
             {isExpanded && (
               <span
@@ -393,8 +381,8 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Reportes - Solo ADMIN */}
-        {permissions.canAccessReportes && (
+        {/* Reportes - Solo admin */}
+        {hasPermission("canAccessReportes") && (
           <div
             className={getItemClasses("reportes")}
             onClick={() =>
@@ -405,16 +393,10 @@ function Sidebar() {
               className={`w-5 h-5 ${
                 activeItem === "reportes" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
             </svg>
             {isExpanded && (
               <span
@@ -428,8 +410,8 @@ function Sidebar() {
           </div>
         )}
 
-        {/* Ver Cocina - Solo ADMIN y COCINA */}
-        {permissions.canAccessCocina && (
+        {/* Cocina */}
+        {hasPermission("canAccessCocina") && (
           <div
             className={getItemClasses("cocina")}
             onClick={() => handleItemClick("cocina", "/home-comandas/cocina")}
@@ -438,15 +420,14 @@ function Sidebar() {
               className={`w-5 h-5 ${
                 activeItem === "cocina" ? "text-white" : ""
               }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              fill="currentColor"
+              viewBox="0 0 20 20"
             >
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+                fillRule="evenodd"
+                d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                clipRule="evenodd"
               />
             </svg>
             {isExpanded && (
@@ -455,73 +436,36 @@ function Sidebar() {
                   activeItem === "cocina" ? "text-white" : "text-slate-300"
                 }`}
               >
-                Ver Cocina
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Promociones - Solo ADMIN */}
-        {permissions.canAccessPromociones && (
-          <div
-            className={getItemClasses("promociones")}
-            onClick={() => handleItemClick("promociones")}
-          >
-            <svg
-              className={`w-5 h-5 ${
-                activeItem === "promociones" ? "text-white" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
-            </svg>
-            {isExpanded && (
-              <span
-                className={`ml-3 font-semibold ${
-                  activeItem === "promociones" ? "text-white" : "text-slate-300"
-                }`}
-              >
-                Promociones
+                Cocina
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Logout */}
-      <div
-        className={`${getItemClasses("logout")}`}
-        onClick={() => handleItemClick("logout")}
-      >
-        <svg
-          className={`w-5 h-5 ${activeItem === "logout" ? "text-white" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      {/* Logout Button */}
+      <div className="mt-auto w-full px-2 sm:px-3">
+        <div
+          className={`${
+            isExpanded
+              ? "w-full px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8"
+              : "w-10 h-10 sm:w-12 sm:h-12"
+          } flex items-center justify-center cursor-pointer transition-all duration-300 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg sm:rounded-xl backdrop-blur-sm border border-transparent hover:border-red-500/30 ${
+            isExpanded ? "justify-start" : ""
+          }`}
+          onClick={handleLogout}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-          />
-        </svg>
-        {isExpanded && (
-          <span
-            className={`ml-3 font-semibold ${
-              activeItem === "logout" ? "text-white" : "text-slate-300"
-            }`}
-          >
-            Cerrar Sesión
-          </span>
-        )}
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {isExpanded && (
+            <span className="ml-3 font-semibold">Cerrar Sesión</span>
+          )}
+        </div>
       </div>
     </div>
   );
