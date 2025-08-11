@@ -8,8 +8,8 @@ import Sidebar, {
   useSidebar,
   SidebarProvider,
 } from "../home/components/Sidebar";
-import { RestaurantGuard } from "../../../components/RestaurantGuard";
-import RoleGuard from "../../../components/RoleGuard";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
+import { SimpleRoleGuard } from "../../../components/SimpleRoleGuard";
 
 function InventarioContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -394,34 +394,32 @@ function InventarioContent() {
 
 const InventarioPage = () => {
   return (
-    <RestaurantGuard>
-      <RoleGuard
-        requiredPermission="canAccessInventario"
-        fallback={
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🚫</div>
-              <h1 className="text-2xl font-bold text-red-400 mb-2">
-                Acceso Denegado
-              </h1>
-              <p className="text-slate-400 mb-4">
-                No tienes permisos para acceder al inventario.
-              </p>
-              <p className="text-slate-500 text-sm">
-                Solo los administradores pueden gestionar el inventario del
-                restaurante.
-              </p>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <SimpleRoleGuard
+          requiredPermission="canAccessInventario"
+          fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🚫</div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">
+                  Acceso Denegado
+                </h1>
+                <p className="text-slate-400 mb-4">
+                  No tienes permisos para acceder a la gestión de inventario.
+                </p>
+                <p className="text-slate-500 text-sm">
+                  Solo los administradores pueden gestionar el inventario del
+                  restaurante.
+                </p>
+              </div>
             </div>
-          </div>
-        }
-      >
-        <div className="min-h-screen bg-slate-900 text-white">
-          <SidebarProvider>
-            <InventarioContent />
-          </SidebarProvider>
-        </div>
-      </RoleGuard>
-    </RestaurantGuard>
+          }
+        >
+          <InventarioContent />
+        </SimpleRoleGuard>
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 };
 

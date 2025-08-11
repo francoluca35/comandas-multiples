@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { ElectronAuthGuard } from "../../../components/ElectronAuthGuard";
 import Sidebar, {
   useSidebar,
   SidebarProvider,
@@ -150,9 +151,11 @@ function VentasContent() {
 
 function VentasPage() {
   return (
-    <SidebarProvider>
-      <VentasContent />
-    </SidebarProvider>
+    <ElectronAuthGuard>
+      <SidebarProvider>
+        <VentasContent />
+      </SidebarProvider>
+    </ElectronAuthGuard>
   );
 }
 

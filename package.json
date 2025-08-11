@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 || wait-on http://localhost:3001 && electron .\"",
+    "electron-dev-robust": "node start-electron-dev.js",
+    "electron-dev-simple": "node dev-simple.js",
+    "electron-dev-new": "node dev-electron.js",
+    "electron-dev-fixed": "node dev-electron-fixed.js",
+    "electron-dev-simple-fixed": "node dev-electron-simple.js",
+    "electron-test": "node test-electron.js",
+    "electron-pack": "npm run build && electron-builder",
+    "electron-dist": "npm run build && electron-builder --publish=never",
+    "build-electron": "node build-electron.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -35,9 +46,39 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "wait-on": "^8.0.4"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.comandas-multiples.app",
+    "productName": "Comandas Múltiples",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "out/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.business"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/Assets/LogoApp.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/Assets/LogoApp.png"
+    }
   }
 }
