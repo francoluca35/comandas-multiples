@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 
 // GET - Obtener el total de inversión del inventario
 export async function GET(request) {

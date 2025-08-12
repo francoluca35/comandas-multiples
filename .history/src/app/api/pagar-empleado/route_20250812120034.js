@@ -7,7 +7,7 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../../../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 
 // POST - Crear un nuevo pago a empleado
 export async function POST(request) {

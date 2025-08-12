@@ -12,7 +12,7 @@ import {
   where,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../../../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 
 // GET - Obtener todas las bebidas
 export async function GET(request) {

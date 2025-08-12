@@ -313,10 +313,7 @@ export async function DELETE(request) {
       );
     }
 
-    console.log(
-      "🔍 API Categorías DELETE - Eliminando categoría para restaurante:",
-      restaurantId
-    );
+    console.log("🔍 API Categorías DELETE - Eliminando categoría para restaurante:", restaurantId);
 
     // Verificar que la categoría existe
     const categoryRef = doc(
