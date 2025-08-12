@@ -9,7 +9,7 @@ import {
   getDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { dbs } from "../../../../lib/firebase";
 
 // GET - Obtener categorías principales
 export async function GET(request) {
