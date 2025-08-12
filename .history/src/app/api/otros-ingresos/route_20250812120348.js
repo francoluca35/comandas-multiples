@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 
 // GET - Obtener todos los otros ingresos
 export async function GET(request) {

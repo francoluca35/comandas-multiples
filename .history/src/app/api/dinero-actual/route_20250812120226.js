@@ -10,7 +10,7 @@ import {
   limit,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../../../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 
 // GET - Obtener el dinero actual (efectivo)
 export async function GET(request) {
