@@ -206,7 +206,9 @@ function LoadingFallback() {
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Cargando...</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Cargando...
+          </h1>
           <p className="text-gray-600">Verificando información del pago</p>
         </div>
       </div>
