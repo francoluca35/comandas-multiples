@@ -35,16 +35,12 @@ export default function VistaRestaurantes() {
     getCriticalRestaurants,
     getHealthyRestaurants,
     analyzeAndResolveIssue,
-    setRestaurants,
   } = useRestaurantMonitoring();
 
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showDetails, setShowDetails] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [analyzingIssue, setAnalyzingIssue] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [resolvingAllIssues, setResolvingAllIssues] = useState(false);
 
   // Filtrar restaurantes según el filtro seleccionado
   const getFilteredRestaurants = () => {
@@ -134,133 +130,6 @@ export default function VistaRestaurantes() {
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h`;
     return "Reciente";
-  };
-
-  // Función para analizar y resolver un problema
-  const handleAnalyzeIssue = async (restaurantId, issue) => {
-    setAnalyzingIssue(true);
-    setAnalysisResult(null);
-
-    try {
-      const result = await analyzeAndResolveIssue(restaurantId, issue);
-      setAnalysisResult(result);
-
-      // Si la resolución fue exitosa, actualizar inmediatamente el estado
-      if (result.success) {
-        // Actualizar el restaurante específico en la lista
-        const updatedRestaurant = await scanRestaurant(restaurantId);
-
-        setRestaurants((prevRestaurants) =>
-          prevRestaurants.map((restaurant) =>
-            restaurant.id === restaurantId ? updatedRestaurant : restaurant
-          )
-        );
-
-        // Si el restaurante seleccionado es el que se actualizó, actualizar también el modal
-        if (selectedRestaurant && selectedRestaurant.id === restaurantId) {
-          setSelectedRestaurant(updatedRestaurant);
-        }
-
-        // Limpiar el resultado después de 3 segundos
-        setTimeout(() => {
-          setAnalysisResult(null);
-        }, 3000);
-      }
-    } catch (error) {
-      setAnalysisResult({
-        success: false,
-        message: "Error al analizar el problema",
-        solution: error.message,
-      });
-    } finally {
-      setAnalyzingIssue(false);
-    }
-  };
-
-  // Función para resolver todos los problemas de un restaurante
-  const handleResolveAllIssues = async (restaurantId) => {
-    setResolvingAllIssues(true);
-    setAnalysisResult(null);
-
-    try {
-      const restaurant = restaurants.find((r) => r.id === restaurantId);
-      if (!restaurant || restaurant.issues.length === 0) {
-        setAnalysisResult({
-          success: false,
-          message: "No hay problemas para resolver",
-          solution: "Este restaurante no tiene problemas detectados",
-        });
-        return;
-      }
-
-      let resolvedCount = 0;
-      let failedCount = 0;
-      const results = [];
-
-      // Resolver cada problema uno por uno
-      for (const issue of restaurant.issues) {
-        try {
-          const result = await analyzeAndResolveIssue(restaurantId, issue);
-          results.push(result);
-          if (result.success) {
-            resolvedCount++;
-          } else {
-            failedCount++;
-          }
-        } catch (error) {
-          failedCount++;
-          results.push({
-            success: false,
-            message: `Error resolviendo ${issue.category}`,
-            solution: error.message,
-          });
-        }
-      }
-
-      // Mostrar resultado general
-      if (resolvedCount > 0) {
-        setAnalysisResult({
-          success: true,
-          message: `${resolvedCount} de ${restaurant.issues.length} problemas resueltos`,
-          solution:
-            failedCount > 0
-              ? `${failedCount} problemas requieren atención manual`
-              : "Todos los problemas han sido resueltos automáticamente",
-        });
-
-        // Actualizar el restaurante después de resolver todos los problemas
-        const updatedRestaurant = await scanRestaurant(restaurantId);
-
-        setRestaurants((prevRestaurants) =>
-          prevRestaurants.map((r) =>
-            r.id === restaurantId ? updatedRestaurant : r
-          )
-        );
-
-        if (selectedRestaurant && selectedRestaurant.id === restaurantId) {
-          setSelectedRestaurant(updatedRestaurant);
-        }
-      } else {
-        setAnalysisResult({
-          success: false,
-          message: "No se pudieron resolver problemas automáticamente",
-          solution: "Todos los problemas requieren intervención manual",
-        });
-      }
-
-      // Limpiar el resultado después de 5 segundos
-      setTimeout(() => {
-        setAnalysisResult(null);
-      }, 5000);
-    } catch (error) {
-      setAnalysisResult({
-        success: false,
-        message: "Error al resolver problemas",
-        solution: error.message,
-      });
-    } finally {
-      setResolvingAllIssues(false);
-    }
   };
 
   return (
@@ -619,32 +488,7 @@ export default function VistaRestaurantes() {
 
             {selectedRestaurant.issues.length > 0 ? (
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold">Problemas Detectados</h4>
-                  <button
-                    onClick={() =>
-                      handleResolveAllIssues(selectedRestaurant.id)
-                    }
-                    disabled={resolvingAllIssues || analyzingIssue}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      resolvingAllIssues || analyzingIssue
-                        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  >
-                    {resolvingAllIssues ? (
-                      <span className="flex items-center space-x-2">
-                        <FaSync className="animate-spin" />
-                        <span>Resolviendo...</span>
-                      </span>
-                    ) : (
-                      <span className="flex items-center space-x-2">
-                        <FaCheckCircle />
-                        <span>Resolver Todos</span>
-                      </span>
-                    )}
-                  </button>
-                </div>
+                <h4 className="font-semibold mb-4">Problemas Detectados</h4>
                 <div className="space-y-3">
                   {selectedRestaurant.issues.map((issue, index) => (
                     <div
@@ -679,71 +523,11 @@ export default function VistaRestaurantes() {
                           <p className="text-sm text-gray-300">
                             {issue.details}
                           </p>
-
-                          {/* Botón de análisis */}
-                          <div className="mt-3">
-                            <button
-                              onClick={() =>
-                                handleAnalyzeIssue(selectedRestaurant.id, issue)
-                              }
-                              disabled={analyzingIssue || resolvingAllIssues}
-                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                analyzingIssue || resolvingAllIssues
-                                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                  : "bg-blue-600 hover:bg-blue-700 text-white"
-                              }`}
-                            >
-                              {analyzingIssue ? (
-                                <span className="flex items-center space-x-1">
-                                  <FaSync className="animate-spin" />
-                                  <span>Analizando...</span>
-                                </span>
-                              ) : (
-                                <span className="flex items-center space-x-1">
-                                  <FaBug />
-                                  <span>Analizar y Resolver</span>
-                                </span>
-                              )}
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Resultado del análisis */}
-                {analysisResult && (
-                  <div
-                    className={`mt-4 p-4 rounded-lg border ${
-                      analysisResult.success
-                        ? "bg-green-900/20 border-green-700"
-                        : "bg-red-900/20 border-red-700"
-                    }`}
-                  >
-                    <div className="flex items-start space-x-2">
-                      {analysisResult.success ? (
-                        <FaCheckCircle className="text-green-500 mt-1" />
-                      ) : (
-                        <FaExclamationTriangle className="text-red-500 mt-1" />
-                      )}
-                      <div className="flex-1">
-                        <h5
-                          className={`font-medium ${
-                            analysisResult.success
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {analysisResult.message}
-                        </h5>
-                        <p className="text-sm text-gray-300 mt-1">
-                          {analysisResult.solution}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-center py-8">

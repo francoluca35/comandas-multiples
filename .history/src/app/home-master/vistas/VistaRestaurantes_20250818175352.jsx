@@ -35,7 +35,6 @@ export default function VistaRestaurantes() {
     getCriticalRestaurants,
     getHealthyRestaurants,
     analyzeAndResolveIssue,
-    setRestaurants,
   } = useRestaurantMonitoring();
 
   const [selectedFilter, setSelectedFilter] = useState("all");

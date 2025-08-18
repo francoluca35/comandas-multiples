@@ -35,7 +35,6 @@ export default function VistaRestaurantes() {
     getCriticalRestaurants,
     getHealthyRestaurants,
     analyzeAndResolveIssue,
-    setRestaurants,
   } = useRestaurantMonitoring();
 
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -172,96 +171,96 @@ export default function VistaRestaurantes() {
         message: "Error al analizar el problema",
         solution: error.message,
       });
-    } finally {
-      setAnalyzingIssue(false);
-    }
-  };
-
-  // Función para resolver todos los problemas de un restaurante
-  const handleResolveAllIssues = async (restaurantId) => {
-    setResolvingAllIssues(true);
-    setAnalysisResult(null);
-
-    try {
-      const restaurant = restaurants.find((r) => r.id === restaurantId);
-      if (!restaurant || restaurant.issues.length === 0) {
-        setAnalysisResult({
-          success: false,
-          message: "No hay problemas para resolver",
-          solution: "Este restaurante no tiene problemas detectados",
-        });
-        return;
-      }
-
-      let resolvedCount = 0;
-      let failedCount = 0;
-      const results = [];
-
-      // Resolver cada problema uno por uno
-      for (const issue of restaurant.issues) {
-        try {
-          const result = await analyzeAndResolveIssue(restaurantId, issue);
-          results.push(result);
-          if (result.success) {
-            resolvedCount++;
-          } else {
-            failedCount++;
-          }
-        } catch (error) {
-          failedCount++;
-          results.push({
-            success: false,
-            message: `Error resolviendo ${issue.category}`,
-            solution: error.message,
-          });
+            } finally {
+          setAnalyzingIssue(false);
         }
-      }
+      };
 
-      // Mostrar resultado general
-      if (resolvedCount > 0) {
-        setAnalysisResult({
-          success: true,
-          message: `${resolvedCount} de ${restaurant.issues.length} problemas resueltos`,
-          solution:
-            failedCount > 0
-              ? `${failedCount} problemas requieren atención manual`
-              : "Todos los problemas han sido resueltos automáticamente",
-        });
-
-        // Actualizar el restaurante después de resolver todos los problemas
-        const updatedRestaurant = await scanRestaurant(restaurantId);
-
-        setRestaurants((prevRestaurants) =>
-          prevRestaurants.map((r) =>
-            r.id === restaurantId ? updatedRestaurant : r
-          )
-        );
-
-        if (selectedRestaurant && selectedRestaurant.id === restaurantId) {
-          setSelectedRestaurant(updatedRestaurant);
-        }
-      } else {
-        setAnalysisResult({
-          success: false,
-          message: "No se pudieron resolver problemas automáticamente",
-          solution: "Todos los problemas requieren intervención manual",
-        });
-      }
-
-      // Limpiar el resultado después de 5 segundos
-      setTimeout(() => {
+      // Función para resolver todos los problemas de un restaurante
+      const handleResolveAllIssues = async (restaurantId) => {
+        setResolvingAllIssues(true);
         setAnalysisResult(null);
-      }, 5000);
-    } catch (error) {
-      setAnalysisResult({
-        success: false,
-        message: "Error al resolver problemas",
-        solution: error.message,
-      });
-    } finally {
-      setResolvingAllIssues(false);
-    }
-  };
+        
+        try {
+          const restaurant = restaurants.find(r => r.id === restaurantId);
+          if (!restaurant || restaurant.issues.length === 0) {
+            setAnalysisResult({
+              success: false,
+              message: "No hay problemas para resolver",
+              solution: "Este restaurante no tiene problemas detectados"
+            });
+            return;
+          }
+
+          let resolvedCount = 0;
+          let failedCount = 0;
+          const results = [];
+
+          // Resolver cada problema uno por uno
+          for (const issue of restaurant.issues) {
+            try {
+              const result = await analyzeAndResolveIssue(restaurantId, issue);
+              results.push(result);
+              if (result.success) {
+                resolvedCount++;
+              } else {
+                failedCount++;
+              }
+            } catch (error) {
+              failedCount++;
+              results.push({
+                success: false,
+                message: `Error resolviendo ${issue.category}`,
+                solution: error.message
+              });
+            }
+          }
+
+          // Mostrar resultado general
+          if (resolvedCount > 0) {
+            setAnalysisResult({
+              success: true,
+              message: `${resolvedCount} de ${restaurant.issues.length} problemas resueltos`,
+              solution: failedCount > 0 
+                ? `${failedCount} problemas requieren atención manual`
+                : "Todos los problemas han sido resueltos automáticamente"
+            });
+
+            // Actualizar el restaurante después de resolver todos los problemas
+            const updatedRestaurant = await scanRestaurant(restaurantId);
+            
+            setRestaurants(prevRestaurants => 
+              prevRestaurants.map(r => 
+                r.id === restaurantId ? updatedRestaurant : r
+              )
+            );
+            
+            if (selectedRestaurant && selectedRestaurant.id === restaurantId) {
+              setSelectedRestaurant(updatedRestaurant);
+            }
+          } else {
+            setAnalysisResult({
+              success: false,
+              message: "No se pudieron resolver problemas automáticamente",
+              solution: "Todos los problemas requieren intervención manual"
+            });
+          }
+
+          // Limpiar el resultado después de 5 segundos
+          setTimeout(() => {
+            setAnalysisResult(null);
+          }, 5000);
+
+        } catch (error) {
+          setAnalysisResult({
+            success: false,
+            message: "Error al resolver problemas",
+            solution: error.message
+          });
+        } finally {
+          setResolvingAllIssues(false);
+        }
+      };
 
   return (
     <div className="text-white p-6 space-y-6">
@@ -619,32 +618,7 @@ export default function VistaRestaurantes() {
 
             {selectedRestaurant.issues.length > 0 ? (
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold">Problemas Detectados</h4>
-                  <button
-                    onClick={() =>
-                      handleResolveAllIssues(selectedRestaurant.id)
-                    }
-                    disabled={resolvingAllIssues || analyzingIssue}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      resolvingAllIssues || analyzingIssue
-                        ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  >
-                    {resolvingAllIssues ? (
-                      <span className="flex items-center space-x-2">
-                        <FaSync className="animate-spin" />
-                        <span>Resolviendo...</span>
-                      </span>
-                    ) : (
-                      <span className="flex items-center space-x-2">
-                        <FaCheckCircle />
-                        <span>Resolver Todos</span>
-                      </span>
-                    )}
-                  </button>
-                </div>
+                <h4 className="font-semibold mb-4">Problemas Detectados</h4>
                 <div className="space-y-3">
                   {selectedRestaurant.issues.map((issue, index) => (
                     <div
@@ -686,9 +660,9 @@ export default function VistaRestaurantes() {
                               onClick={() =>
                                 handleAnalyzeIssue(selectedRestaurant.id, issue)
                               }
-                              disabled={analyzingIssue || resolvingAllIssues}
+                              disabled={analyzingIssue}
                               className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                analyzingIssue || resolvingAllIssues
+                                analyzingIssue
                                   ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                                   : "bg-blue-600 hover:bg-blue-700 text-white"
                               }`}
