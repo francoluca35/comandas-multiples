@@ -206,14 +206,12 @@ export const useProducts = () => {
       // Obtener productos del inventario (bebidas y comidas)
       try {
         // Obtener bebidas del inventario
-        const bebidasResponse = await fetch(
-          `/api/stock?restauranteId=${restaurantId}`
-        );
+        const bebidasResponse = await fetch(`/api/stock?restauranteId=${restaurantId}`);
         if (bebidasResponse.ok) {
           const bebidas = await bebidasResponse.json();
           const bebidasInventario = bebidas
-            .filter((bebida) => bebida.tipo === "bebida")
-            .map((bebida) => ({
+            .filter(bebida => bebida.tipo === "bebida")
+            .map(bebida => ({
               ...bebida,
               id: bebida.id,
               nombre: bebida.nombre,
@@ -228,24 +226,19 @@ export const useProducts = () => {
               costo: bebida.costo,
               imagen: bebida.imagen,
               tipoProducto: "bebida",
-              origen: "inventario",
+              origen: "inventario"
             }));
           allProducts.push(...bebidasInventario);
-          console.log(
-            "✅ Bebidas del inventario agregadas:",
-            bebidasInventario
-          );
+          console.log("✅ Bebidas del inventario agregadas:", bebidasInventario);
         }
 
         // Obtener materia prima del inventario (solo las que son comida)
-        const materiaPrimaResponse = await fetch(
-          `/api/materia-prima?restauranteId=${restaurantId}`
-        );
+        const materiaPrimaResponse = await fetch(`/api/materia-prima?restauranteId=${restaurantId}`);
         if (materiaPrimaResponse.ok) {
           const materiaPrima = await materiaPrimaResponse.json();
           const comidasInventario = materiaPrima
-            .filter((item) => item.esComida === true)
-            .map((comida) => ({
+            .filter(item => item.esComida === true)
+            .map(comida => ({
               ...comida,
               id: comida.id,
               nombre: comida.nombre,
@@ -260,27 +253,18 @@ export const useProducts = () => {
               costo: comida.costo,
               imagen: comida.imagen,
               tipoProducto: "alimento",
-              origen: "inventario",
+              origen: "inventario"
             }));
           allProducts.push(...comidasInventario);
-          console.log(
-            "✅ Comidas del inventario agregadas:",
-            comidasInventario
-          );
+          console.log("✅ Comidas del inventario agregadas:", comidasInventario);
         }
       } catch (inventarioError) {
-        console.warn(
-          "Error obteniendo productos del inventario:",
-          inventarioError
-        );
+        console.warn("Error obteniendo productos del inventario:", inventarioError);
         // No fallar si no se pueden obtener productos del inventario
       }
 
       setProducts(allProducts);
-      console.log(
-        "✅ Todos los productos cargados (menú + inventario):",
-        allProducts
-      );
+      console.log("✅ Todos los productos cargados (menú + inventario):", allProducts);
       return allProducts;
     } catch (err) {
       setError(`Error al cargar todos los productos: ${err.message}`);

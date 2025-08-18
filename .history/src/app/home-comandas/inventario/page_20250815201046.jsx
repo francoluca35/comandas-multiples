@@ -1,13 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  FaPlus,
-  FaSearch,
-  FaFilter,
-  FaChartBar,
-  FaWineBottle,
-  FaCarrot,
-} from "react-icons/fa";
+import { FaPlus, FaSearch, FaFilter, FaChartBar, FaWineBottle, FaCarrot } from "react-icons/fa";
 import { useInventario } from "../../../hooks/useInventario";
 import ProductoModal from "./components/ProductoModal";
 import ProductoCard from "./components/ProductoCard";
@@ -46,18 +39,13 @@ function InventarioContent() {
 
   // Obtener categorías únicas de ambos tipos
   const categoriasBebidas = [...new Set(bebidas.map((b) => b.categoria))];
-  const categoriasMateriaPrima = [
-    ...new Set(materiaPrima.map((mp) => mp.categoria)),
-  ];
-  const categorias = [
-    "Todas",
-    ...new Set([...categoriasBebidas, ...categoriasMateriaPrima]),
-  ];
+  const categoriasMateriaPrima = [...new Set(materiaPrima.map((mp) => mp.categoria))];
+  const categorias = ["Todas", ...new Set([...categoriasBebidas, ...categoriasMateriaPrima])];
 
   // Combinar todos los productos para filtrado
   const todosLosProductos = [
-    ...bebidas.map((b) => ({ ...b, tipoProducto: "bebida" })),
-    ...materiaPrima.map((mp) => ({ ...mp, tipoProducto: "materiaPrima" })),
+    ...bebidas.map(b => ({ ...b, tipoProducto: 'bebida' })),
+    ...materiaPrima.map(mp => ({ ...mp, tipoProducto: 'materiaPrima' }))
   ];
 
   // Filtrar productos
@@ -235,7 +223,9 @@ function InventarioContent() {
               <p className="text-xl font-bold text-orange-400">
                 {formatCurrency(stats.costoStock)}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Cantidad × Costo</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Cantidad × Costo
+              </p>
             </div>
 
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4">
@@ -246,7 +236,9 @@ function InventarioContent() {
               <p className="text-xl font-bold text-green-400">
                 {formatCurrency(stats.ganancia)}
               </p>
-              <p className="text-xs text-slate-500 mt-1">Valor - Costo</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Valor - Costo
+              </p>
             </div>
 
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4">
@@ -277,12 +269,11 @@ function InventarioContent() {
               <div className="flex bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
                 {["Todas", "Bebidas", "Comidas"].map((tipo) => {
                   // Contar productos por tipo
-                  const count =
-                    tipo === "Todas"
-                      ? todosLosProductos.length
-                      : tipo === "Bebidas"
-                      ? bebidas.length
-                      : materiaPrima.length;
+                  const count = tipo === "Todas" 
+                    ? todosLosProductos.length
+                    : tipo === "Bebidas" 
+                    ? bebidas.length 
+                    : materiaPrima.length;
 
                   return (
                     <button
@@ -360,9 +351,7 @@ function InventarioContent() {
                   key={`${producto.tipoProducto}-${producto.id}`}
                   producto={producto}
                   onEdit={handleEdit}
-                  onDelete={(producto) =>
-                    handleDelete(producto, producto.tipoProducto)
-                  }
+                  onDelete={(producto) => handleDelete(producto, producto.tipoProducto)}
                   tipoProducto={producto.tipoProducto}
                 />
               ))}

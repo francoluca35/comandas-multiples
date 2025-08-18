@@ -1,19 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  FaTimes,
-  FaUpload,
-  FaSave,
-  FaEdit,
-  FaWineBottle,
-  FaCarrot,
-} from "react-icons/fa";
+import { FaTimes, FaUpload, FaSave, FaEdit } from "react-icons/fa";
 
 export default function ProductoModal({
   isOpen,
   onClose,
   producto = null,
   onSave,
+  categorias = [],
 }) {
   const [formData, setFormData] = useState({
     nombre: "",
@@ -24,29 +18,23 @@ export default function ProductoModal({
     precio: "",
     costo: "",
     imagen: "",
-    esComida: false, // Nuevo: checkbox para comida
-    esStock: false, // Nuevo: checkbox para stock
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoriaDropdown, setShowCategoriaDropdown] = useState(false);
 
   // Cargar datos del producto si es edición
   useEffect(() => {
     if (producto) {
       setFormData({
         nombre: producto.nombre || "",
-        tipo:
-          producto.tipo || producto.tipoProducto === "materiaPrima"
-            ? "alimento"
-            : "bebida",
+        tipo: producto.tipo || "",
         categoria: producto.categoria || "",
         subcategoria: producto.subcategoria || "",
         stock: producto.stock?.toString() || "",
         precio: producto.precio?.toString() || "",
         costo: producto.costo?.toString() || "",
         imagen: producto.imagen || "",
-        esComida: producto.esComida || false, // Cargar estado de comida
-        esStock: producto.esStock || false, // Cargar estado de stock
       });
     } else {
       setFormData({
@@ -58,11 +46,10 @@ export default function ProductoModal({
         precio: "",
         costo: "",
         imagen: "",
-        esComida: false,
-        esStock: false,
       });
     }
     setErrors({});
+    setShowCategoriaDropdown(false);
   }, [producto, isOpen]);
 
   const validateForm = () => {
@@ -76,12 +63,9 @@ export default function ProductoModal({
       newErrors.tipo = "El tipo es requerido";
     }
 
-    // Validar checkboxes para materia prima
-    if (formData.tipo === "alimento") {
-      if (!formData.esComida && !formData.esStock) {
-        newErrors.checkboxes =
-          "Debes seleccionar al menos una opción (Comida o Stock)";
-      }
+    // Solo validar categoría si NO es bebida
+    if (formData.tipo !== "bebida" && !formData.categoria.trim()) {
+      newErrors.categoria = "La categoría es requerida";
     }
 
     if (formData.tipo === "bebida" && !formData.subcategoria.trim()) {
@@ -125,14 +109,15 @@ export default function ProductoModal({
       const productoData = {
         nombre: formData.nombre.trim(),
         tipo: formData.tipo.trim(),
-        categoria: formData.tipo === "bebida" ? "bebidas" : "general",
+        categoria:
+          formData.tipo === "bebida"
+            ? formData.categoria.trim() || "bebidas"
+            : formData.categoria.trim(),
         subcategoria: formData.subcategoria.trim(),
         stock: parseInt(formData.stock) || 0,
         precio: parseFloat(formData.precio) || 0,
         costo: parseFloat(formData.costo) || 0,
         imagen: formData.imagen.trim(),
-        esComida: formData.esComida, // Guardar estado de comida
-        esStock: formData.esStock, // Guardar estado de stock
       };
 
       await onSave(productoData);
@@ -148,11 +133,6 @@ export default function ProductoModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-
-    // Limpiar error de checkboxes si se selecciona alguna opción
-    if ((field === "esComida" || field === "esStock") && errors.checkboxes) {
-      setErrors((prev) => ({ ...prev, checkboxes: "" }));
     }
   };
 
@@ -205,79 +185,30 @@ export default function ProductoModal({
                 <button
                   type="button"
                   onClick={() => handleInputChange("tipo", "bebida")}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 ${
+                  className={`px-4 py-3 rounded-xl border transition-all duration-300 ${
                     formData.tipo === "bebida"
                       ? "bg-blue-600 border-blue-500 text-white"
                       : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50"
                   } ${errors.tipo ? "border-red-500" : ""}`}
                 >
-                  <FaWineBottle className="w-4 h-4" />
                   🥤 Bebida
                 </button>
                 <button
                   type="button"
                   onClick={() => handleInputChange("tipo", "alimento")}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 ${
+                  className={`px-4 py-3 rounded-xl border transition-all duration-300 ${
                     formData.tipo === "alimento"
                       ? "bg-green-600 border-green-500 text-white"
                       : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50"
                   } ${errors.tipo ? "border-red-500" : ""}`}
                 >
-                  <FaCarrot className="w-4 h-4" />
-                  🥕 Materia Prima
+                  🍽️ Alimento
                 </button>
               </div>
               {errors.tipo && (
                 <p className="text-red-400 text-sm mt-2">{errors.tipo}</p>
               )}
             </div>
-
-            {/* Checkboxes para Materia Prima */}
-            {formData.tipo === "alimento" && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-3">
-                  Tipo de Materia Prima *
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleInputChange("esComida", !formData.esComida)
-                    }
-                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 ${
-                      formData.esComida
-                        ? "bg-green-600 border-green-500 text-white"
-                        : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50"
-                    }`}
-                  >
-                    🍽️ Comida
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleInputChange("esStock", !formData.esStock)
-                    }
-                    className={`px-4 py-3 rounded-xl border transition-all duration-300 flex items-center justify-center gap-2 ${
-                      formData.esStock
-                        ? "bg-orange-600 border-orange-500 text-white"
-                        : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50"
-                    }`}
-                  >
-                    📦 Stock
-                  </button>
-                </div>
-                {!formData.esComida && !formData.esStock && (
-                  <p className="text-orange-400 text-sm mt-2">
-                    Selecciona al menos una opción
-                  </p>
-                )}
-                {errors.checkboxes && (
-                  <p className="text-red-400 text-sm mt-2">
-                    {errors.checkboxes}
-                  </p>
-                )}
-              </div>
-            )}
 
             {/* Subcategoría para Bebidas */}
             {formData.tipo === "bebida" && (
@@ -320,6 +251,62 @@ export default function ProductoModal({
                 )}
               </div>
             )}
+
+            {/* Categoría - Para todos los productos */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-3">
+                Categoría {formData.tipo === "bebida" ? "(Opcional)" : "*"}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.categoria}
+                  onChange={(e) =>
+                    handleInputChange("categoria", e.target.value)
+                  }
+                  onFocus={() => setShowCategoriaDropdown(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowCategoriaDropdown(false), 200)
+                  }
+                  className={`w-full px-4 py-3 bg-slate-700/50 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400 backdrop-blur-sm ${
+                    errors.categoria ? "border-red-500" : "border-slate-600/50"
+                  }`}
+                  placeholder={
+                    formData.tipo === "bebida"
+                      ? "bebidas (por defecto)"
+                      : "Escribir o seleccionar categoría"
+                  }
+                  list="categorias-list"
+                />
+
+                {/* Dropdown de categorías existentes */}
+                {showCategoriaDropdown && categorias.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                    {categorias
+                      .filter((cat) =>
+                        cat
+                          .toLowerCase()
+                          .includes(formData.categoria.toLowerCase())
+                      )
+                      .map((cat) => (
+                        <div
+                          key={cat}
+                          className="px-4 py-2 hover:bg-slate-600 cursor-pointer text-white text-sm"
+                          onClick={() => {
+                            handleInputChange("categoria", cat);
+                            setShowCategoriaDropdown(false);
+                          }}
+                        >
+                          {cat}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+              {errors.categoria && (
+                <p className="text-red-400 text-sm mt-2">{errors.categoria}</p>
+              )}
+            </div>
 
             {/* Stock */}
             <div>

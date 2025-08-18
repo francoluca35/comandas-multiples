@@ -14,6 +14,7 @@ export default function ProductoModal({
   onClose,
   producto = null,
   onSave,
+  categorias = [],
 }) {
   const [formData, setFormData] = useState({
     nombre: "",
@@ -29,6 +30,7 @@ export default function ProductoModal({
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoriaDropdown, setShowCategoriaDropdown] = useState(false);
 
   // Cargar datos del producto si es edición
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function ProductoModal({
       });
     }
     setErrors({});
+    setShowCategoriaDropdown(false);
   }, [producto, isOpen]);
 
   const validateForm = () => {
@@ -82,6 +85,11 @@ export default function ProductoModal({
         newErrors.checkboxes =
           "Debes seleccionar al menos una opción (Comida o Stock)";
       }
+    }
+
+    // Solo validar categoría si NO es bebida
+    if (formData.tipo !== "bebida" && !formData.categoria.trim()) {
+      newErrors.categoria = "La categoría es requerida";
     }
 
     if (formData.tipo === "bebida" && !formData.subcategoria.trim()) {
@@ -125,7 +133,10 @@ export default function ProductoModal({
       const productoData = {
         nombre: formData.nombre.trim(),
         tipo: formData.tipo.trim(),
-        categoria: formData.tipo === "bebida" ? "bebidas" : "general",
+        categoria:
+          formData.tipo === "bebida"
+            ? formData.categoria.trim() || "bebidas"
+            : formData.categoria.trim(),
         subcategoria: formData.subcategoria.trim(),
         stock: parseInt(formData.stock) || 0,
         precio: parseFloat(formData.precio) || 0,
@@ -320,6 +331,62 @@ export default function ProductoModal({
                 )}
               </div>
             )}
+
+            {/* Categoría - Para todos los productos */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-3">
+                Categoría {formData.tipo === "bebida" ? "(Opcional)" : "*"}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.categoria}
+                  onChange={(e) =>
+                    handleInputChange("categoria", e.target.value)
+                  }
+                  onFocus={() => setShowCategoriaDropdown(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowCategoriaDropdown(false), 200)
+                  }
+                  className={`w-full px-4 py-3 bg-slate-700/50 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder-slate-400 backdrop-blur-sm ${
+                    errors.categoria ? "border-red-500" : "border-slate-600/50"
+                  }`}
+                  placeholder={
+                    formData.tipo === "bebida"
+                      ? "bebidas (por defecto)"
+                      : "Escribir o seleccionar categoría"
+                  }
+                  list="categorias-list"
+                />
+
+                {/* Dropdown de categorías existentes */}
+                {showCategoriaDropdown && categorias.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                    {categorias
+                      .filter((cat) =>
+                        cat
+                          .toLowerCase()
+                          .includes(formData.categoria.toLowerCase())
+                      )
+                      .map((cat) => (
+                        <div
+                          key={cat}
+                          className="px-4 py-2 hover:bg-slate-600 cursor-pointer text-white text-sm"
+                          onClick={() => {
+                            handleInputChange("categoria", cat);
+                            setShowCategoriaDropdown(false);
+                          }}
+                        >
+                          {cat}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+              {errors.categoria && (
+                <p className="text-red-400 text-sm mt-2">{errors.categoria}</p>
+              )}
+            </div>
 
             {/* Stock */}
             <div>

@@ -572,10 +572,7 @@ export const useTables = () => {
     setError(null);
     try {
       const restaurantId = getRestaurantId();
-      console.log(
-        "🔍 Verificando estado de mesas para restaurante:",
-        restaurantId
-      );
+      console.log("🔍 Verificando estado de mesas para restaurante:", restaurantId);
 
       const tablesRef = collection(db, "restaurantes", restaurantId, "tables");
       const q = query(tablesRef, orderBy("numero"));
@@ -585,43 +582,25 @@ export const useTables = () => {
 
       querySnapshot.forEach((doc) => {
         const tableData = doc.data();
-
+        
         // Si la mesa no tiene estado definido o tiene un estado inválido
-        if (
-          !tableData.estado ||
-          !["libre", "ocupado", "servido", "pagado"].includes(tableData.estado)
-        ) {
-          console.log(
-            `⚠️ Mesa ${tableData.numero} tiene estado inválido:`,
-            tableData.estado
-          );
-
+        if (!tableData.estado || !["libre", "ocupado", "servido", "pagado"].includes(tableData.estado)) {
+          console.log(`⚠️ Mesa ${tableData.numero} tiene estado inválido:`, tableData.estado);
+          
           // Determinar el estado correcto basado en los datos
           let correctStatus = "libre";
-
-          if (
-            tableData.productos &&
-            Object.keys(tableData.productos).length > 0
-          ) {
+          
+          if (tableData.productos && Object.keys(tableData.productos).length > 0) {
             if (tableData.total > 0) {
               correctStatus = "ocupado";
             } else {
               correctStatus = "libre";
             }
           }
-
-          console.log(
-            `✅ Corrigiendo mesa ${tableData.numero} a estado:`,
-            correctStatus
-          );
-
-          const tableRef = doc(
-            db,
-            "restaurantes",
-            restaurantId,
-            "tables",
-            doc.id
-          );
+          
+          console.log(`✅ Corrigiendo mesa ${tableData.numero} a estado:`, correctStatus);
+          
+          const tableRef = doc(db, "restaurantes", restaurantId, "tables", doc.id);
           updatePromises.push(
             updateDoc(tableRef, {
               estado: correctStatus,

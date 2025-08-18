@@ -459,16 +459,12 @@ function ProductosContent() {
                     {product.origen && (
                       <p>
                         <span className="font-medium">Origen:</span>{" "}
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            product.origen === "inventario"
-                              ? "bg-orange-600 text-white"
-                              : "bg-blue-600 text-white"
-                          }`}
-                        >
-                          {product.origen === "inventario"
-                            ? "📦 Inventario"
-                            : "🍽️ Menú"}
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          product.origen === "inventario" 
+                            ? "bg-orange-600 text-white" 
+                            : "bg-blue-600 text-white"
+                        }`}>
+                          {product.origen === "inventario" ? "📦 Inventario" : "🍽️ Menú"}
                         </span>
                       </p>
                     )}
@@ -500,13 +496,9 @@ function ProductosContent() {
                     {product.stock !== undefined && (
                       <p>
                         <span className="font-medium">Stock:</span>{" "}
-                        <span
-                          className={`font-medium ${
-                            product.stock > 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }`}
-                        >
+                        <span className={`font-medium ${
+                          product.stock > 0 ? "text-green-400" : "text-red-400"
+                        }`}>
                           {product.stock}
                         </span>
                       </p>

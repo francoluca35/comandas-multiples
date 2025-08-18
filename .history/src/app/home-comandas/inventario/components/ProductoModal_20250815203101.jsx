@@ -14,6 +14,7 @@ export default function ProductoModal({
   onClose,
   producto = null,
   onSave,
+  categorias = [],
 }) {
   const [formData, setFormData] = useState({
     nombre: "",

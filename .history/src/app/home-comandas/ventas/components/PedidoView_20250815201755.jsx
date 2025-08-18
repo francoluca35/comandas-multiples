@@ -252,27 +252,13 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
 
   // Filtrar productos por categoría principal y subcategoría seleccionadas
   const filteredProducts = products.filter((product) => {
-    // Si hay categoría principal seleccionada, filtrar por ella
-    if (
-      selectedMainCategory &&
-      product.mainCategoryId !== selectedMainCategory
-    ) {
-      return false;
-    }
-
-    // Si no hay subcategoría seleccionada, mostrar todos los productos de la categoría principal
+    // Si no hay subcategoría seleccionada, mostrar todos los productos
     if (!selectedSubCategory) {
       return true;
     }
 
     // Filtrar por subcategoría seleccionada
     return product.subCategoryId === selectedSubCategory;
-  });
-
-  // Filtrar subcategorías por categoría principal seleccionada
-  const filteredSubCategories = allSubCategories.filter((subCategory) => {
-    if (!selectedMainCategory) return true;
-    return subCategory.mainCategoryId === selectedMainCategory;
   });
 
   return (
@@ -335,14 +321,10 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                 : "bg-gray-700 text-white hover:bg-gray-600"
             }`}
           >
-            {selectedMainCategory === "comida"
-              ? "🍽️ Todas las comidas"
-              : selectedMainCategory === "bebidas"
-              ? "🥤 Todas las bebidas"
-              : "🍽️ Todos"}
+            🍽️ Todos
           </button>
 
-          {filteredSubCategories.map((subCategory) => (
+          {allSubCategories.map((subCategory) => (
             <button
               key={`${subCategory.mainCategoryId}-${subCategory.id}`}
               onClick={() => setSelectedSubCategory(subCategory.id)}
@@ -491,10 +473,6 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
             <div className="text-white text-center">
               {selectedSubCategory
                 ? "No hay productos en esta subcategoría"
-                : selectedMainCategory === "comida"
-                ? "Selecciona una subcategoría de comida o usa 'Todas las comidas'"
-                : selectedMainCategory === "bebidas"
-                ? "Selecciona una subcategoría de bebidas o usa 'Todas las bebidas'"
                 : "Selecciona una subcategoría específica o usa 'Todos' para ver todos los productos"}
             </div>
           )}

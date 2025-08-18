@@ -14,6 +14,7 @@ export default function ProductoModal({
   onClose,
   producto = null,
   onSave,
+  categorias = [],
 }) {
   const [formData, setFormData] = useState({
     nombre: "",
@@ -29,6 +30,7 @@ export default function ProductoModal({
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCategoriaDropdown, setShowCategoriaDropdown] = useState(false);
 
   // Cargar datos del producto si es edición
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function ProductoModal({
       });
     }
     setErrors({});
+    setShowCategoriaDropdown(false);
   }, [producto, isOpen]);
 
   const validateForm = () => {
@@ -125,7 +128,10 @@ export default function ProductoModal({
       const productoData = {
         nombre: formData.nombre.trim(),
         tipo: formData.tipo.trim(),
-        categoria: formData.tipo === "bebida" ? "bebidas" : "general",
+        categoria:
+          formData.tipo === "bebida"
+            ? formData.categoria.trim() || "bebidas"
+            : formData.categoria.trim(),
         subcategoria: formData.subcategoria.trim(),
         stock: parseInt(formData.stock) || 0,
         precio: parseFloat(formData.precio) || 0,
