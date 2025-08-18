@@ -253,10 +253,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
   // Filtrar productos por categoría principal y subcategoría seleccionadas
   const filteredProducts = products.filter((product) => {
     // Si hay categoría principal seleccionada, filtrar por ella
-    if (
-      selectedMainCategory &&
-      product.mainCategoryId !== selectedMainCategory
-    ) {
+    if (selectedMainCategory && product.mainCategoryId !== selectedMainCategory) {
       return false;
     }
 
@@ -335,11 +332,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                 : "bg-gray-700 text-white hover:bg-gray-600"
             }`}
           >
-            {selectedMainCategory === "comida"
-              ? "🍽️ Todas las comidas"
-              : selectedMainCategory === "bebidas"
-              ? "🥤 Todas las bebidas"
-              : "🍽️ Todos"}
+            🍽️ Todos
           </button>
 
           {filteredSubCategories.map((subCategory) => (
@@ -491,10 +484,6 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
             <div className="text-white text-center">
               {selectedSubCategory
                 ? "No hay productos en esta subcategoría"
-                : selectedMainCategory === "comida"
-                ? "Selecciona una subcategoría de comida o usa 'Todas las comidas'"
-                : selectedMainCategory === "bebidas"
-                ? "Selecciona una subcategoría de bebidas o usa 'Todas las bebidas'"
                 : "Selecciona una subcategoría específica o usa 'Todos' para ver todos los productos"}
             </div>
           )}

@@ -190,7 +190,6 @@ export const useProducts = () => {
       const mainCategories = await fetchMainCategories();
       const allProducts = [];
 
-      // Obtener productos del menú
       for (const mainCategory of mainCategories) {
         const subCategories = await fetchSubCategories(mainCategory.id);
 
@@ -203,84 +202,8 @@ export const useProducts = () => {
         }
       }
 
-      // Obtener productos del inventario (bebidas y comidas)
-      try {
-        // Obtener bebidas del inventario
-        const bebidasResponse = await fetch(
-          `/api/stock?restauranteId=${restaurantId}`
-        );
-        if (bebidasResponse.ok) {
-          const bebidas = await bebidasResponse.json();
-          const bebidasInventario = bebidas
-            .filter((bebida) => bebida.tipo === "bebida")
-            .map((bebida) => ({
-              ...bebida,
-              id: bebida.id,
-              nombre: bebida.nombre,
-              precio: bebida.precio,
-              descuento: 0,
-              descripcion: bebida.categoria || "Bebida del inventario",
-              mainCategoryId: "bebidas",
-              subCategoryId: bebida.subcategoria || "sin alcohol",
-              activo: bebida.stock > 0,
-              habilitada: bebida.stock > 0,
-              stock: bebida.stock,
-              costo: bebida.costo,
-              imagen: bebida.imagen,
-              tipoProducto: "bebida",
-              origen: "inventario",
-            }));
-          allProducts.push(...bebidasInventario);
-          console.log(
-            "✅ Bebidas del inventario agregadas:",
-            bebidasInventario
-          );
-        }
-
-        // Obtener materia prima del inventario (solo las que son comida)
-        const materiaPrimaResponse = await fetch(
-          `/api/materia-prima?restauranteId=${restaurantId}`
-        );
-        if (materiaPrimaResponse.ok) {
-          const materiaPrima = await materiaPrimaResponse.json();
-          const comidasInventario = materiaPrima
-            .filter((item) => item.esComida === true)
-            .map((comida) => ({
-              ...comida,
-              id: comida.id,
-              nombre: comida.nombre,
-              precio: comida.precio,
-              descuento: 0,
-              descripcion: comida.categoria || "Comida del inventario",
-              mainCategoryId: "comida",
-              subCategoryId: "Varios",
-              activo: true,
-              habilitada: true,
-              stock: comida.stock,
-              costo: comida.costo,
-              imagen: comida.imagen,
-              tipoProducto: "alimento",
-              origen: "inventario",
-            }));
-          allProducts.push(...comidasInventario);
-          console.log(
-            "✅ Comidas del inventario agregadas:",
-            comidasInventario
-          );
-        }
-      } catch (inventarioError) {
-        console.warn(
-          "Error obteniendo productos del inventario:",
-          inventarioError
-        );
-        // No fallar si no se pueden obtener productos del inventario
-      }
-
       setProducts(allProducts);
-      console.log(
-        "✅ Todos los productos cargados (menú + inventario):",
-        allProducts
-      );
+      console.log("✅ Todos los productos cargados:", allProducts);
       return allProducts;
     } catch (err) {
       setError(`Error al cargar todos los productos: ${err.message}`);
@@ -725,8 +648,8 @@ export const useProducts = () => {
       for (const mainCategory of mainCategories) {
         const subCategories = await fetchSubCategories(mainCategory.id);
         // Filtrar solo subcategorías habilitadas (si tienen la propiedad habilitada)
-        const enabledSubCategories = subCategories.filter(
-          (subCat) => subCat.habilitada !== false // Incluir si no tiene la propiedad o si es true
+        const enabledSubCategories = subCategories.filter(subCat => 
+          subCat.habilitada !== false // Incluir si no tiene la propiedad o si es true
         );
         allSubCategories.push(...enabledSubCategories);
       }

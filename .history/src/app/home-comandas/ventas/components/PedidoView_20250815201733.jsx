@@ -252,27 +252,13 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
 
   // Filtrar productos por categoría principal y subcategoría seleccionadas
   const filteredProducts = products.filter((product) => {
-    // Si hay categoría principal seleccionada, filtrar por ella
-    if (
-      selectedMainCategory &&
-      product.mainCategoryId !== selectedMainCategory
-    ) {
-      return false;
-    }
-
-    // Si no hay subcategoría seleccionada, mostrar todos los productos de la categoría principal
+    // Si no hay subcategoría seleccionada, mostrar todos los productos
     if (!selectedSubCategory) {
       return true;
     }
 
     // Filtrar por subcategoría seleccionada
     return product.subCategoryId === selectedSubCategory;
-  });
-
-  // Filtrar subcategorías por categoría principal seleccionada
-  const filteredSubCategories = allSubCategories.filter((subCategory) => {
-    if (!selectedMainCategory) return true;
-    return subCategory.mainCategoryId === selectedMainCategory;
   });
 
   return (
@@ -326,23 +312,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
 
         {/* Todas las subcategorías habilitadas */}
         <div className="flex space-x-2 overflow-x-auto">
-          {/* Botón "Todos" para mostrar todos los productos */}
-          <button
-            onClick={() => setSelectedSubCategory("")}
-            className={`px-4 py-2 rounded-lg flex-shrink-0 transition-colors ${
-              selectedSubCategory === ""
-                ? "bg-green-500 text-white"
-                : "bg-gray-700 text-white hover:bg-gray-600"
-            }`}
-          >
-            {selectedMainCategory === "comida"
-              ? "🍽️ Todas las comidas"
-              : selectedMainCategory === "bebidas"
-              ? "🥤 Todas las bebidas"
-              : "🍽️ Todos"}
-          </button>
-
-          {filteredSubCategories.map((subCategory) => (
+          {allSubCategories.map((subCategory) => (
             <button
               key={`${subCategory.mainCategoryId}-${subCategory.id}`}
               onClick={() => setSelectedSubCategory(subCategory.id)}
@@ -491,11 +461,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
             <div className="text-white text-center">
               {selectedSubCategory
                 ? "No hay productos en esta subcategoría"
-                : selectedMainCategory === "comida"
-                ? "Selecciona una subcategoría de comida o usa 'Todas las comidas'"
-                : selectedMainCategory === "bebidas"
-                ? "Selecciona una subcategoría de bebidas o usa 'Todas las bebidas'"
-                : "Selecciona una subcategoría específica o usa 'Todos' para ver todos los productos"}
+                : "Selecciona una subcategoría para ver productos"}
             </div>
           )}
         </div>

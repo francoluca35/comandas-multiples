@@ -253,10 +253,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
   // Filtrar productos por categoría principal y subcategoría seleccionadas
   const filteredProducts = products.filter((product) => {
     // Si hay categoría principal seleccionada, filtrar por ella
-    if (
-      selectedMainCategory &&
-      product.mainCategoryId !== selectedMainCategory
-    ) {
+    if (selectedMainCategory && product.mainCategoryId !== selectedMainCategory) {
       return false;
     }
 
@@ -335,11 +332,9 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                 : "bg-gray-700 text-white hover:bg-gray-600"
             }`}
           >
-            {selectedMainCategory === "comida"
-              ? "🍽️ Todas las comidas"
-              : selectedMainCategory === "bebidas"
-              ? "🥤 Todas las bebidas"
-              : "🍽️ Todos"}
+            {selectedMainCategory === "comida" ? "🍽️ Todas las comidas" : 
+             selectedMainCategory === "bebidas" ? "🥤 Todas las bebidas" : 
+             "🍽️ Todos"}
           </button>
 
           {filteredSubCategories.map((subCategory) => (

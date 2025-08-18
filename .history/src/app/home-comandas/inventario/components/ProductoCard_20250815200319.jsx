@@ -1,11 +1,5 @@
 "use client";
-import {
-  FaEdit,
-  FaTrash,
-  FaStar,
-  FaWineBottle,
-  FaCarrot,
-} from "react-icons/fa";
+import { FaEdit, FaTrash, FaStar } from "react-icons/fa";
 import CloudinaryImage from "../../../../components/CloudinaryImage";
 
 export default function ProductoCard({
@@ -13,7 +7,6 @@ export default function ProductoCard({
   onEdit,
   onDelete,
   onToggleFavorite,
-  tipoProducto, // "bebida" o "materiaPrima"
 }) {
   const getStockColor = (stock) => {
     if (stock === 0) return "text-red-500";
@@ -32,30 +25,6 @@ export default function ProductoCard({
       style: "currency",
       currency: "ARS",
     }).format(price);
-  };
-
-  const getTipoIcon = () => {
-    if (tipoProducto === "bebida") {
-      return <FaWineBottle className="w-4 h-4 text-blue-400" />;
-    } else {
-      return <FaCarrot className="w-4 h-4 text-green-400" />;
-    }
-  };
-
-  const getTipoLabel = () => {
-    if (tipoProducto === "bebida") {
-      return "🥤 Bebida";
-    } else {
-      return "🥕 Materia Prima";
-    }
-  };
-
-  const getTipoColor = () => {
-    if (tipoProducto === "bebida") {
-      return "bg-blue-500/20 text-blue-400";
-    } else {
-      return "bg-green-500/20 text-green-400";
-    }
   };
 
   return (
@@ -85,12 +54,9 @@ export default function ProductoCard({
 
           {/* Información básica */}
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              {getTipoIcon()}
-              <h3 className="font-semibold text-white text-sm truncate">
-                {producto.nombre}
-              </h3>
-            </div>
+            <h3 className="font-semibold text-white text-sm truncate">
+              {producto.nombre}
+            </h3>
             <p className="text-slate-400 text-xs">{producto.categoria}</p>
           </div>
         </div>
@@ -112,7 +78,7 @@ export default function ProductoCard({
             <FaEdit className="w-3 h-3" />
           </button>
           <button
-            onClick={() => onDelete(producto)}
+            onClick={() => onDelete(producto.id)}
             className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
             title="Eliminar"
           >
@@ -164,9 +130,9 @@ export default function ProductoCard({
           </span>
         </div>
 
-        {/* Valor en Stock */}
+        {/* Precio Total */}
         <div className="flex items-center justify-between">
-          <span className="text-slate-400 text-xs">Valor en Stock:</span>
+          <span className="text-slate-400 text-xs">Precio Total:</span>
           <span className="font-semibold text-blue-400 text-sm">
             {formatPrice(producto.stock * producto.precio)}
           </span>
@@ -200,13 +166,20 @@ export default function ProductoCard({
       {/* Tags de tipo y categoría */}
       <div className="mt-3 pt-3 border-t border-slate-700/50 flex flex-wrap gap-2">
         <span
-          className={`inline-block px-2 py-1 text-xs rounded-full ${getTipoColor()}`}
+          className={`inline-block px-2 py-1 text-xs rounded-full ${
+            producto.tipo === "bebida"
+              ? "bg-blue-500/20 text-blue-400"
+              : "bg-green-500/20 text-green-400"
+          }`}
         >
-          {getTipoLabel()}
+          {producto.tipo === "bebida" ? "🥤 Bebida" : "🍽️ Alimento"}
         </span>
-
-        {/* Subcategoría para bebidas */}
-        {tipoProducto === "bebida" && producto.subcategoria && (
+        {producto.tipo !== "bebida" && (
+          <span className="inline-block px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+            {producto.categoria}
+          </span>
+        )}
+        {producto.tipo === "bebida" && producto.subcategoria && (
           <span
             className={`inline-block px-2 py-1 text-xs rounded-full ${
               producto.subcategoria === "con alcohol"
@@ -219,11 +192,6 @@ export default function ProductoCard({
               : "🥤 Sin Alcohol"}
           </span>
         )}
-
-        {/* Categoría */}
-        <span className="inline-block px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
-          {producto.categoria}
-        </span>
       </div>
     </div>
   );

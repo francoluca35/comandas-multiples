@@ -188,10 +188,7 @@ function MesasManagement() {
       {/* Header Section - Fixed */}
       <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50">
         <div className="px-8 py-6">
-          <MesasHeader
-            onAddTable={() => setShowAddModal(true)}
-            onVerifyStatus={handleVerifyStatus}
-          />
+          <MesasHeader onAddTable={() => setShowAddModal(true)} onVerifyStatus={handleVerifyStatus} />
         </div>
       </div>
 

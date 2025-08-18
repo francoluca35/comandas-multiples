@@ -426,28 +426,18 @@ function ProductosContent() {
                       {product.nombre}
                     </h3>
                     <div className="flex space-x-2">
-                      {product.origen !== "inventario" ? (
-                        <>
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="text-blue-400 hover:text-blue-300"
-                            title="Editar producto"
-                          >
-                            {getIcon("edit")}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product)}
-                            className="text-red-400 hover:text-red-300"
-                            title="Eliminar producto"
-                          >
-                            {getIcon("delete")}
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs text-slate-500 px-2 py-1 bg-slate-700 rounded">
-                          Gestionar desde Inventario
-                        </span>
-                      )}
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="text-blue-400 hover:text-blue-300"
+                      >
+                        {getIcon("edit")}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        {getIcon("delete")}
+                      </button>
                     </div>
                   </div>
 
@@ -459,16 +449,12 @@ function ProductosContent() {
                     {product.origen && (
                       <p>
                         <span className="font-medium">Origen:</span>{" "}
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            product.origen === "inventario"
-                              ? "bg-orange-600 text-white"
-                              : "bg-blue-600 text-white"
-                          }`}
-                        >
-                          {product.origen === "inventario"
-                            ? "📦 Inventario"
-                            : "🍽️ Menú"}
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          product.origen === "inventario" 
+                            ? "bg-orange-600 text-white" 
+                            : "bg-blue-600 text-white"
+                        }`}>
+                          {product.origen === "inventario" ? "📦 Inventario" : "🍽️ Menú"}
                         </span>
                       </p>
                     )}
@@ -500,13 +486,9 @@ function ProductosContent() {
                     {product.stock !== undefined && (
                       <p>
                         <span className="font-medium">Stock:</span>{" "}
-                        <span
-                          className={`font-medium ${
-                            product.stock > 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }`}
-                        >
+                        <span className={`font-medium ${
+                          product.stock > 0 ? "text-green-400" : "text-red-400"
+                        }`}>
                           {product.stock}
                         </span>
                       </p>

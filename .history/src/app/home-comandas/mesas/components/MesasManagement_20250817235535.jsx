@@ -43,12 +43,7 @@ function MesasManagement() {
 
   // Cargar mesas al montar el componente
   useEffect(() => {
-    const loadTables = async () => {
-      await fetchTables();
-      // Verificar y corregir el estado de las mesas
-      await verifyAndFixTableStatus();
-    };
-    loadTables();
+    fetchTables();
   }, []);
 
   // Generar número automático cuando se abre el modal de agregar
@@ -173,25 +168,12 @@ function MesasManagement() {
     setShowDeleteModal(true);
   };
 
-  const handleVerifyStatus = async () => {
-    try {
-      await verifyAndFixTableStatus();
-      alert("Estados de mesas verificados y corregidos correctamente");
-    } catch (error) {
-      console.error("Error al verificar estados:", error);
-      alert("Error al verificar los estados de las mesas");
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       {/* Header Section - Fixed */}
       <div className="flex-shrink-0 bg-slate-900/50 backdrop-blur-sm border-b border-slate-700/50">
         <div className="px-8 py-6">
-          <MesasHeader
-            onAddTable={() => setShowAddModal(true)}
-            onVerifyStatus={handleVerifyStatus}
-          />
+          <MesasHeader onAddTable={() => setShowAddModal(true)} />
         </div>
       </div>
 

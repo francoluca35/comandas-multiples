@@ -1,11 +1,5 @@
 "use client";
-import {
-  FaEdit,
-  FaTrash,
-  FaStar,
-  FaWineBottle,
-  FaCarrot,
-} from "react-icons/fa";
+import { FaEdit, FaTrash, FaStar, FaWineBottle, FaCarrot } from "react-icons/fa";
 import CloudinaryImage from "../../../../components/CloudinaryImage";
 
 export default function ProductoCard({
@@ -199,12 +193,10 @@ export default function ProductoCard({
 
       {/* Tags de tipo y categoría */}
       <div className="mt-3 pt-3 border-t border-slate-700/50 flex flex-wrap gap-2">
-        <span
-          className={`inline-block px-2 py-1 text-xs rounded-full ${getTipoColor()}`}
-        >
+        <span className={`inline-block px-2 py-1 text-xs rounded-full ${getTipoColor()}`}>
           {getTipoLabel()}
         </span>
-
+        
         {/* Subcategoría para bebidas */}
         {tipoProducto === "bebida" && producto.subcategoria && (
           <span
