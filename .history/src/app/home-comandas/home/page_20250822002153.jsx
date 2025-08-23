@@ -1,0 +1,144 @@
+"use client";
+import React from "react";
+import Sidebar, { useSidebar, SidebarProvider } from "./components/Sidebar";
+
+import TurnoCard from "./components/TurnoCerradoCard";
+import VentasCard from "./components/VentasCard";
+import DineroCard from "./components/DineroCard";
+import StockCard from "./components/StockCard";
+import DispositivosCard from "./components/DispositivosCard";
+
+import { RestaurantGuard } from "../../../components/RestaurantGuard";
+import { useTurno } from "@/app/context/TurnoContext";
+import { useRole } from "@/app/context/RoleContext";
+
+function DashboardContent() {
+  const { isExpanded, toggleSidebar } = useSidebar();
+  const { turnoInfo } = useTurno();
+  const { permissions, isAdmin } = useRole();
+
+  return (
+    <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
+      <Sidebar />
+
+      {/* Overlay para cerrar sidebar cuando está abierto */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      {/* Main Content */}
+      <div
+        className={`flex-1 transition-all duration-300 overflow-auto ${
+          isExpanded
+            ? "ml-56 sm:ml-64 md:ml-72 lg:ml-80 xl:ml-[420px]"
+            : "ml-16 sm:ml-20"
+        }`}
+      >
+        {/* Responsive padding and grid */}
+        <div className="p-2 sm:p-3 md:p-4 lg:p-6 h-full">
+          {isAdmin ? (
+            // Dashboard completo para ADMIN
+            <>
+              {/* Layout responsive para tablets y desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6 h-full auto-rows-fr">
+                {/* Primera fila: 2 tarjetas */}
+                <div className="flex flex-col min-h-0">
+                  <TurnoCard />
+                </div>
+                <div className="flex flex-col min-h-0">
+                  <VentasCard />
+                </div>
+
+                {/* Segunda fila: 2 tarjetas */}
+                <div className="flex flex-col min-h-0">
+                  <DineroCard />
+                </div>
+                <div className="flex flex-col min-h-0">
+                  <StockCard />
+                </div>
+
+                {/* Tercera fila: 1 tarjeta centrada */}
+                <div className="col-span-1 sm:col-span-2 flex flex-col min-h-0">
+                  <DispositivosCard />
+                </div>
+              </div>
+            </>
+          ) : (
+            // Dashboard limitado para MESERO, COCINA y USUARIO
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6 h-full max-w-4xl mx-auto">
+                {/* Solo turno y ventas */}
+                <div className="flex flex-col min-h-0">
+                  <TurnoCard />
+                </div>
+                <div className="flex flex-col min-h-0">
+                  <VentasCard />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TurnoView() {
+  const { isExpanded, toggleSidebar } = useSidebar();
+
+  return (
+    <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
+      <Sidebar />
+
+      {/* Overlay para cerrar sidebar cuando está abierto */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      {/* Main Content - Solo muestra el componente de turno */}
+      <div
+        className={`flex-1 transition-all duration-300 overflow-auto ${
+          isExpanded
+            ? "ml-56 sm:ml-64 md:ml-72 lg:ml-80 xl:ml-96 2xl:ml-[420px]"
+            : "ml-16 sm:ml-20"
+        }`}
+      >
+        <div className="flex items-center justify-center min-h-screen p-2 sm:p-3 md:p-4 lg:p-6">
+          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
+            <TurnoCard />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeContent() {
+  const { turnoAbierto } = useTurno();
+
+  // Si el turno está cerrado, solo mostrar la vista de turno
+  if (!turnoAbierto) {
+    return <TurnoView />;
+  }
+
+  // Si el turno está abierto, mostrar el dashboard completo
+  return <DashboardContent />;
+}
+
+function Home() {
+  return (
+    <RestaurantGuard>
+      <SidebarProvider>
+        <HomeContent />
+      </SidebarProvider>
+    </RestaurantGuard>
+  );
+}
+
+export default Home;
