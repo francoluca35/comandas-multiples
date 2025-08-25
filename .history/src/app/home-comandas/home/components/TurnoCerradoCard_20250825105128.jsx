@@ -68,6 +68,17 @@ function TurnoCard() {
   }, [turnoAbierto, obtenerDuracionTurno]);
 
   const handleAbrirTurno = () => {
+    console.log("🔍 Debug handleAbrirTurno - Estado actual:", {
+      usuarioActual,
+      turnoAbierto,
+      turnoInfo,
+    });
+    console.log("🔍 Debug handleAbrirTurno - localStorage:", {
+      usuario: localStorage.getItem("usuario"),
+      rol: localStorage.getItem("rol"),
+      restauranteId: localStorage.getItem("restauranteId"),
+    });
+    
     if (abrirTurno()) {
       console.log("Turno abierto exitosamente");
       // Mostrar mensaje de confirmación
@@ -307,6 +318,24 @@ function TurnoCard() {
              />
            </svg>
            Abrir Turno
+         </button>
+         
+         <button
+           onClick={() => {
+             console.log("🔍 Debug completo - localStorage:", {
+               usuario: localStorage.getItem("usuario"),
+               rol: localStorage.getItem("rol"),
+               restauranteId: localStorage.getItem("restauranteId"),
+               nombreCompleto: localStorage.getItem("nombreCompleto"),
+               userImage: localStorage.getItem("userImage"),
+             });
+             
+             // Forzar recarga del AuthContext
+             window.location.reload();
+           }}
+           className="w-full bg-yellow-600 hover:bg-yellow-700 rounded-lg px-6 py-3 text-lg font-medium flex items-center justify-center transition-colors duration-200"
+         >
+           🔄 Recargar y Debug
          </button>
 
         <button className="w-full bg-gray-700 hover:bg-gray-600 rounded-lg px-6 py-3 text-lg font-medium flex items-center justify-center transition-colors duration-200">

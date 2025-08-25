@@ -381,28 +381,13 @@ function Login() {
                 <p className="text-yellow-400 text-sm mb-2">
                   Este usuario no tiene configurada la huella digital.
                 </p>
-                <p className="text-yellow-300 text-xs mb-2">
-                  Para configurar huellas digitales, inicia sesión con contraseña y ve a Configuración.
-                </p>
                 <button
-                  onClick={() => setAuthMethod("password")}
+                  onClick={() => handleSetupBiometric(usuarioSeleccionado)}
                   className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 rounded font-semibold flex items-center justify-center space-x-2"
                 >
-                  <FaKey className="w-4 h-4" />
-                  <span>Usar Contraseña</span>
+                  <FaFingerprint className="w-4 h-4" />
+                  <span>Configurar Huella Digital</span>
                 </button>
-              </div>
-            )}
-
-            {/* Información si ya tiene huellas configuradas */}
-            {authMethod === "biometric" && usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-green-400 text-sm mb-2">
-                  ✅ Huellas digitales configuradas ({usuarioSeleccionado.biometricCredentials?.length || 0} huellas)
-                </p>
-                <p className="text-green-300 text-xs">
-                  Usa tu huella digital para iniciar sesión rápidamente.
-                </p>
               </div>
             )}
 
@@ -484,15 +469,13 @@ function Login() {
         
       </div>
 
-      {/* Modal de configuración de huella digital - SOLO para configuración inicial */}
+      {/* Modal de configuración de huella digital */}
       <BiometricSetupModal
         isOpen={showBiometricSetup}
         onClose={() => setShowBiometricSetup(false)}
         onSuccess={handleBiometricSetupSuccess}
         userId={selectedUserForBiometric?.id}
         username={selectedUserForBiometric?.usuario}
-        existingCredentials={selectedUserForBiometric?.biometricCredentials || []}
-        isInitialSetup={true}
       />
     </div>
   );
