@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRestaurantUsers } from "../../../hooks/useRestaurantUsers";
 import { useBiometricAuth } from "../../../hooks/useBiometricAuth";
 import Swal from "sweetalert2";
+import { AuthDebugger } from "../../../components/AuthDebugger";
 import BiometricSetupModal from "../../../components/BiometricSetupModal";
 
 function Login() {
@@ -126,12 +127,10 @@ function Login() {
       );
 
       // Verificar autenticación con el servidor
-      const restauranteId = localStorage.getItem("restauranteId");
       const response = await fetch("/api/biometric/authenticate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-restaurante-id": restauranteId,
         },
         body: JSON.stringify({
           userId: usuarioSeleccionado.id,
@@ -199,8 +198,7 @@ function Login() {
     // Redirigir después de aceptar la alerta
     // Pequeño delay para asegurar que localStorage esté disponible
     setTimeout(() => {
-      // Forzar recarga para que el AuthContext detecte los nuevos datos
-      window.location.href = "/home-comandas/home";
+      router.push("/home-comandas/home");
     }, 100);
   };
 
@@ -232,6 +230,7 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-black flex justify-center p-4">
+      <AuthDebugger />
       <div className="bg-[#1c1c1c] h-full p-6 rounded-lg shadow-lg w-[400px] text-white">
         <div className="flex items-center justify-center mb-4 text-white text-xl font-semibold">
           <FaUsers className="mr-2" />
@@ -334,132 +333,55 @@ function Login() {
           ))}
         </div>
 
-        
+        {/* Botones de debug */}
+        <div className="bg-[#2e2e2e] p-3 rounded mb-4">
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => {
+                console.log("🔍 Debug: Estado actual");
+                const authData = {
+                  usuario: localStorage.getItem("usuario"),
+                  rol: localStorage.getItem("rol"),
+                  restauranteId: localStorage.getItem("restauranteId"),
+                  nombreResto: localStorage.getItem("nombreResto"),
+                };
+                console.log("📋 Datos de autenticación:", authData);
+              }}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black py-2 px-3 rounded font-semibold text-sm"
+            >
+              Debug: Estado
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("¿Limpiar estado de autenticación?")) {
+                  localStorage.clear();
+                  window.location.reload();
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded font-semibold text-sm"
+            >
+              Limpiar Estado
+            </button>
+          </div>
+        </div>
 
         {usuarioSeleccionado && (
           <div className="mb-4">
-            {/* Método de autenticación */}
-            <div className="mb-4">
-              <label className="block text-sm mb-2 text-white">
-                Método de autenticación para <strong>{usuarioSeleccionado.usuario}</strong>:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setAuthMethod("password")}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
-                    authMethod === "password"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                      : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500"
-                  }`}
-                >
-                  <FaKey className="w-5 h-5" />
-                  <span className="text-sm font-medium">Contraseña</span>
-                </button>
-                
-                <button
-                  onClick={() => setAuthMethod("biometric")}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
-                    authMethod === "biometric"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                      : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500"
-                  }`}
-                >
-                  <FaFingerprint className="w-5 h-5" />
-                  <span className="text-sm font-medium">Huella Digital</span>
-                  {!usuarioSeleccionado.biometricEnabled && (
-                    <span className="text-xs text-red-400">No configurada</span>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            
-
-            {/* Configurar huella digital si no está configurada */}
-            {authMethod === "biometric" && !usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <p className="text-yellow-400 text-sm mb-2">
-                  Este usuario no tiene configurada la huella digital.
-                </p>
-                <p className="text-yellow-300 text-xs mb-2">
-                  Para configurar huellas digitales, inicia sesión con contraseña y ve a Configuración.
-                </p>
-                <button
-                  onClick={() => setAuthMethod("password")}
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 rounded font-semibold flex items-center justify-center space-x-2"
-                >
-                  <FaKey className="w-4 h-4" />
-                  <span>Usar Contraseña</span>
-                </button>
-              </div>
-            )}
-
-            {/* Información si ya tiene huellas configuradas */}
-            {authMethod === "biometric" && usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-green-400 text-sm mb-2">
-                  ✅ Huellas digitales configuradas ({usuarioSeleccionado.biometricCredentials?.length || 0} huellas)
-                </p>
-                <p className="text-green-300 text-xs">
-                  Usa tu huella digital para iniciar sesión rápidamente.
-                </p>
-              </div>
-            )}
-
-            {/* Mensaje si no es compatible */}
-            {authMethod === "biometric" && (!biometricSupported || !biometricAvailable) && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-400 text-sm mb-2">
-                  <strong>Tu dispositivo no es compatible con autenticación biométrica:</strong>
-                </p>
-                <ul className="text-red-300 text-xs space-y-1">
-                  {!biometricSupported && <li>• Tu navegador no soporta Web Authentication API</li>}
-                  {!biometricAvailable && <li>• Tu dispositivo no tiene sensor de huella digital</li>}
-                </ul>
-                <p className="text-red-300 text-xs mt-2">
-                  Usa el método de contraseña para acceder al sistema.
-                </p>
-              </div>
-            )}
-
-            {/* Campo de contraseña (solo para método de contraseña) */}
-            {authMethod === "password" && (
-              <div className="mb-4">
-                <label className="block text-sm mb-1 text-white">
-                  Contraseña:
-                </label>
-                <input
-                  type="password"
-                  className="w-full p-2 rounded text-black"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                  placeholder="Ingresa tu contraseña"
-                />
-              </div>
-            )}
-
-            {/* Botón de login */}
+            <label className="block text-sm mb-1">
+              Contraseña para <strong>{usuarioSeleccionado.usuario}</strong>:
+            </label>
+            <input
+              type="password"
+              className="w-full p-2 rounded text-black"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
             <button
               onClick={handleLogin}
-              disabled={authMethod === "password" && !password}
-              className={`w-full py-3 rounded font-bold flex items-center justify-center space-x-2 ${
-                authMethod === "password" && !password
-                  ? "bg-gray-500 text-gray-300 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600 text-white"
-              }`}
+              className="bg-green-500 text-white w-full mt-2 py-2 rounded font-bold"
             >
-              {authMethod === "password" ? (
-                <>
-                  <FaKey className="w-4 h-4" />
-                  <span>Ingresar con Contraseña</span>
-                </>
-              ) : (
-                <>
-                  <FaFingerprint className="w-4 h-4" />
-                  <span>Ingresar con Huella Digital</span>
-                </>
-              )}
+              Ingresar
             </button>
           </div>
         )}
@@ -481,19 +403,26 @@ function Login() {
           </button>
         </div>
 
-        
+        {/* Botón de debug temporal */}
+        <div className="mt-4">
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded text-sm mr-2"
+            onClick={debugRestaurantes}
+          >
+            Debug: Listar Restaurantes
+          </button>
+          <button
+            className="bg-orange-500 text-white px-4 py-2 rounded text-sm"
+            onClick={debugCrearUsuario}
+          >
+            Debug: Verificar Usuarios
+          </button>
+          <div className="text-xs text-gray-400 mt-2">
+            Restaurante ID:{" "}
+            {localStorage.getItem("restauranteId") || "No encontrado"}
+          </div>
+        </div>
       </div>
-
-      {/* Modal de configuración de huella digital - SOLO para configuración inicial */}
-      <BiometricSetupModal
-        isOpen={showBiometricSetup}
-        onClose={() => setShowBiometricSetup(false)}
-        onSuccess={handleBiometricSetupSuccess}
-        userId={selectedUserForBiometric?.id}
-        username={selectedUserForBiometric?.usuario}
-        existingCredentials={selectedUserForBiometric?.biometricCredentials || []}
-        isInitialSetup={true}
-      />
     </div>
   );
 }

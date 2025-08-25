@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRestaurantUsers } from "../../../hooks/useRestaurantUsers";
 import { useBiometricAuth } from "../../../hooks/useBiometricAuth";
 import Swal from "sweetalert2";
+import { AuthDebugger } from "../../../components/AuthDebugger";
 import BiometricSetupModal from "../../../components/BiometricSetupModal";
 
 function Login() {
@@ -232,6 +233,7 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-black flex justify-center p-4">
+      <AuthDebugger />
       <div className="bg-[#1c1c1c] h-full p-6 rounded-lg shadow-lg w-[400px] text-white">
         <div className="flex items-center justify-center mb-4 text-white text-xl font-semibold">
           <FaUsers className="mr-2" />
@@ -334,7 +336,37 @@ function Login() {
           ))}
         </div>
 
-        
+        {/* Botones de debug */}
+        <div className="bg-[#2e2e2e] p-3 rounded mb-4">
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => {
+                console.log("🔍 Debug: Estado actual");
+                const authData = {
+                  usuario: localStorage.getItem("usuario"),
+                  rol: localStorage.getItem("rol"),
+                  restauranteId: localStorage.getItem("restauranteId"),
+                  nombreResto: localStorage.getItem("nombreResto"),
+                };
+                console.log("📋 Datos de autenticación:", authData);
+              }}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black py-2 px-3 rounded font-semibold text-sm"
+            >
+              Debug: Estado
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("¿Limpiar estado de autenticación?")) {
+                  localStorage.clear();
+                  window.location.reload();
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded font-semibold text-sm"
+            >
+              Limpiar Estado
+            </button>
+          </div>
+        </div>
 
         {usuarioSeleccionado && (
           <div className="mb-4">
@@ -373,7 +405,31 @@ function Login() {
               </div>
             </div>
 
-            
+            {/* Debug de compatibilidad biométrica */}
+            {authMethod === "biometric" && (
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-blue-400 text-sm mb-2">
+                  <strong>Debug de compatibilidad:</strong>
+                </p>
+                <ul className="text-blue-300 text-xs space-y-1">
+                  <li>• Método seleccionado: {authMethod}</li>
+                  <li>• Huella configurada: {usuarioSeleccionado.biometricEnabled ? "Sí" : "No"}</li>
+                  <li>• WebAuthn soportado: {biometricSupported ? "Sí" : "No"}</li>
+                  <li>• Sensor disponible: {biometricAvailable ? "Sí" : "No"}</li>
+                  <li>• Credenciales guardadas: {usuarioSeleccionado.biometricCredentials ? "Sí" : "No"}</li>
+                  <li>• Tipo de credenciales: {usuarioSeleccionado.biometricCredentials ? (Array.isArray(usuarioSeleccionado.biometricCredentials) ? "Array" : "Objeto") : "N/A"}</li>
+                </ul>
+                <button
+                  onClick={() => {
+                    console.log("🔍 Debug: Credenciales biométricas del usuario:", usuarioSeleccionado.biometricCredentials);
+                    console.log("🔍 Debug: Usuario completo:", usuarioSeleccionado);
+                  }}
+                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs"
+                >
+                  Ver Credenciales en Console
+                </button>
+              </div>
+            )}
 
             {/* Configurar huella digital si no está configurada */}
             {authMethod === "biometric" && !usuarioSeleccionado.biometricEnabled && (
@@ -381,28 +437,13 @@ function Login() {
                 <p className="text-yellow-400 text-sm mb-2">
                   Este usuario no tiene configurada la huella digital.
                 </p>
-                <p className="text-yellow-300 text-xs mb-2">
-                  Para configurar huellas digitales, inicia sesión con contraseña y ve a Configuración.
-                </p>
                 <button
-                  onClick={() => setAuthMethod("password")}
+                  onClick={() => handleSetupBiometric(usuarioSeleccionado)}
                   className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 rounded font-semibold flex items-center justify-center space-x-2"
                 >
-                  <FaKey className="w-4 h-4" />
-                  <span>Usar Contraseña</span>
+                  <FaFingerprint className="w-4 h-4" />
+                  <span>Configurar Huella Digital</span>
                 </button>
-              </div>
-            )}
-
-            {/* Información si ya tiene huellas configuradas */}
-            {authMethod === "biometric" && usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-green-400 text-sm mb-2">
-                  ✅ Huellas digitales configuradas ({usuarioSeleccionado.biometricCredentials?.length || 0} huellas)
-                </p>
-                <p className="text-green-300 text-xs">
-                  Usa tu huella digital para iniciar sesión rápidamente.
-                </p>
               </div>
             )}
 
@@ -481,18 +522,34 @@ function Login() {
           </button>
         </div>
 
-        
+        {/* Botón de debug temporal */}
+        <div className="mt-4">
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded text-sm mr-2"
+            onClick={debugRestaurantes}
+          >
+            Debug: Listar Restaurantes
+          </button>
+          <button
+            className="bg-orange-500 text-white px-4 py-2 rounded text-sm"
+            onClick={debugCrearUsuario}
+          >
+            Debug: Verificar Usuarios
+          </button>
+          <div className="text-xs text-gray-400 mt-2">
+            Restaurante ID:{" "}
+            {localStorage.getItem("restauranteId") || "No encontrado"}
+          </div>
+        </div>
       </div>
 
-      {/* Modal de configuración de huella digital - SOLO para configuración inicial */}
+      {/* Modal de configuración de huella digital */}
       <BiometricSetupModal
         isOpen={showBiometricSetup}
         onClose={() => setShowBiometricSetup(false)}
         onSuccess={handleBiometricSetupSuccess}
         userId={selectedUserForBiometric?.id}
         username={selectedUserForBiometric?.usuario}
-        existingCredentials={selectedUserForBiometric?.biometricCredentials || []}
-        isInitialSetup={true}
       />
     </div>
   );

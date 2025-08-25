@@ -65,7 +65,6 @@ export const useRestaurantUsers = () => {
         ...doc.data(),
         biometricEnabled: doc.data().biometricEnabled || false,
         biometricSetupDate: doc.data().biometricSetupDate || null,
-        biometricCredentials: doc.data().biometricCredentials || null,
       }));
 
       console.log("✅ Usuarios encontrados para", nombreResto, ":", usersData);

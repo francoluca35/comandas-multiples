@@ -105,25 +105,10 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
       };
 
-      // Verificar autenticación cada 2 segundos para detectar cambios
-      const interval = setInterval(() => {
-        const restauranteId = localStorage.getItem("restauranteId");
-        const usuarioLocal = localStorage.getItem("usuario");
-        const rolLocal = localStorage.getItem("rol");
-        
-        if (restauranteId && usuarioLocal && rolLocal && !usuario) {
-          console.log("🔄 Detectados datos de autenticación, recargando contexto");
-          checkAuth();
-        }
-      }, 2000);
-
       window.addEventListener("storage", handleStorageChange);
-      return () => {
-        window.removeEventListener("storage", handleStorageChange);
-        clearInterval(interval);
-      };
+      return () => window.removeEventListener("storage", handleStorageChange);
     }
-  }, [checkAuth, usuario]);
+  }, [checkAuth]);
 
   const value = {
     usuario,
