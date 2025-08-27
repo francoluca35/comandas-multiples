@@ -38,33 +38,19 @@ export const AutoRedirect = () => {
         
         // Si está en la página de login pero ya está autenticado, redirigir a home
         // Solo considerar autenticado si tiene datos específicos del usuario (no solo del restaurante)
-        // Después del prelogin, solo se guardan datos del restaurante, no del usuario específico
-        if (isOnLoginPage && usuario && rol && restauranteId && nombreResto) {
-          // Verificar que realmente hay un usuario específico logueado (no solo datos del restaurante)
-          const usuarioId = localStorage.getItem("usuarioId");
-          const nombreCompleto = localStorage.getItem("nombreCompleto");
-          
-          if (usuarioId && nombreCompleto) {
-            console.log("🔄 Usuario ya autenticado, redirigiendo a home");
-            redirectingRef.current = true;
-            router.push("/home-comandas/home");
-            return;
-          } else {
-            console.log("ℹ️ Datos de restaurante disponibles, pero no hay usuario específico logueado");
-          }
+        if (isOnLoginPage && usuario && rol && restauranteId && nombreResto && usuario !== "admin") {
+          console.log("🔄 Usuario ya autenticado, redirigiendo a home");
+          redirectingRef.current = true;
+          router.push("/home-comandas/home");
+          return;
         }
         
         // Si está en home pero no está autenticado, redirigir a login
-        if (isOnHomePage) {
-          const usuarioId = localStorage.getItem("usuarioId");
-          const nombreCompleto = localStorage.getItem("nombreCompleto");
-          
-          if (!usuario || !rol || !restauranteId || !nombreResto || !usuarioId || !nombreCompleto) {
-            console.log("🔄 Usuario no autenticado, redirigiendo a login");
-            redirectingRef.current = true;
-            router.push("/home-comandas/login");
-            return;
-          }
+        if (isOnHomePage && (!usuario || !rol || !restauranteId || !nombreResto)) {
+          console.log("🔄 Usuario no autenticado, redirigiendo a login");
+          redirectingRef.current = true;
+          router.push("/home-comandas/login");
+          return;
         }
       }
     };
