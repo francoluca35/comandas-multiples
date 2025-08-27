@@ -55,16 +55,11 @@ export const AutoRedirect = () => {
         }
         
         // Si está en home pero no está autenticado, redirigir a login
-        if (isOnHomePage) {
-          const usuarioId = localStorage.getItem("usuarioId");
-          const nombreCompleto = localStorage.getItem("nombreCompleto");
-          
-          if (!usuario || !rol || !restauranteId || !nombreResto || !usuarioId || !nombreCompleto) {
-            console.log("🔄 Usuario no autenticado, redirigiendo a login");
-            redirectingRef.current = true;
-            router.push("/home-comandas/login");
-            return;
-          }
+        if (isOnHomePage && (!usuario || !rol || !restauranteId || !nombreResto)) {
+          console.log("🔄 Usuario no autenticado, redirigiendo a login");
+          redirectingRef.current = true;
+          router.push("/home-comandas/login");
+          return;
         }
       }
     };

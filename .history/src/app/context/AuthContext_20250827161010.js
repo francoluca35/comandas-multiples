@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }) => {
       if (restauranteId && usuarioLocal && rolLocal) {
         // Verificar que realmente hay un usuario específico logueado (no solo datos del restaurante)
         const usuarioId = localStorage.getItem("usuarioId");
+        const nombreCompleto = localStorage.getItem("nombreCompleto");
         
         if (usuarioId && nombreCompleto) {
           // Usuario autenticado en sistema de restaurantes
