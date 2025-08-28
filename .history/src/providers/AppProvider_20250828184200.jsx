@@ -9,6 +9,7 @@ import { RoleProvider } from "../app/context/RoleContext";
 import { RestaurantProvider } from "../app/context/RestaurantContext";
 import { ProviderFallback } from "../components/ProviderFallback";
 import metricsCollector from "../lib/metrics";
+import { useBiometricPersistence } from "../hooks/useBiometricPersistence";
 
 // Configuración de toast notifications
 const toastConfig = {
