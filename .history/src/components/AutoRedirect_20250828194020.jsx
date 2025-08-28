@@ -7,10 +7,6 @@ export const AutoRedirect = () => {
   const redirectingRef = useRef(false);
 
   useEffect(() => {
-    // TEMPORALMENTE DESHABILITADO PARA EVITAR BUCLES INFINITOS
-    console.log("🚫 AutoRedirect temporalmente deshabilitado para evitar bucles infinitos");
-    return () => {};
-    
     // Solo ejecutar en el cliente
     if (typeof window === "undefined") return;
 
