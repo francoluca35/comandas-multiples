@@ -161,7 +161,6 @@ export const useBiometricAuth = () => {
 
       // Verificar que la autenticación fue exitosa
       if (assertion) {
-        console.log("✅ Autenticación biométrica exitosa");
         return {
           success: true,
           credentialId: assertion.id,
@@ -173,30 +172,13 @@ export const useBiometricAuth = () => {
         throw new Error("Autenticación biométrica fallida");
       }
     } catch (error) {
-      console.error("❌ Error en autenticación biométrica:", error);
-      
-      // IMPORTANTE: NO borrar credenciales en caso de error
-      // Solo mostrar el error y permitir reintentar
-      if (error.name === "NotAllowedError") {
-        setError("Huella digital no reconocida. Intenta nuevamente.");
-      } else if (error.name === "SecurityError") {
-        setError("Error de seguridad. Verifica que estés usando HTTPS.");
-      } else if (error.name === "InvalidStateError") {
-        setError("Estado inválido. Intenta nuevamente.");
-      } else {
-        setError(`Error de autenticación: ${error.message}`);
-      }
-      
-      // Retornar error sin borrar datos
-      return {
-        success: false,
-        error: error.message,
-        errorType: error.name
-      };
+      console.error("Error en autenticación biométrica:", error);
+      setError(error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [isAvailable, getCredentials]);
+  }, [isAvailable]);
 
   // Eliminar credenciales biométricas
   const removeBiometric = useCallback(async (credentialId) => {
@@ -223,12 +205,12 @@ export const useBiometricAuth = () => {
   // Obtener credenciales locales
   const getLocalCredentials = useCallback(async (userId) => {
     try {
-      return await getCredentials(userId);
+      return await getCredentialsFromDB(userId);
     } catch (error) {
       console.error("Error obteniendo credenciales locales:", error);
       return [];
     }
-  }, [getCredentials]);
+  }, []);
 
   return {
     isSupported,

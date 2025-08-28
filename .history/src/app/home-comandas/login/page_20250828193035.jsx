@@ -288,124 +288,122 @@ function Login() {
           {restauranteInfo.nombre}
         </div>
 
-        {/* Recuadro unificado para usuarios */}
-        <div className="bg-[#2e2e2e] p-4 rounded mb-4">
-          {/* Conteo de usuarios */}
-          <div className="mb-3">
-            <p className="text-sm text-center text-gray-300">
-              Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
-            </p>
-          </div>
-
-          {/* Formulario de creación */}
-          {mostrarFormulario && (
-            <div className="mb-4 p-3 bg-[#1c1c1c] rounded">
-              <h3 className="text-lg font-semibold mb-3 text-white">Crear Nuevo Usuario</h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nombre de usuario"
-                  value={nuevoUsuario.usuario}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <input
-                  type="password"
-                  placeholder="Contraseña"
-                  value={nuevoUsuario.password}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <select
-                  value={nuevoUsuario.rol}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                >
-                  <option value="usuario">Usuario</option>
-                  <option value="admin">Administrador</option>
-                </select>
-                <input
-                  type="url"
-                  placeholder="URL de imagen (opcional)"
-                  value={nuevoUsuario.imagen}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, imagen: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCrearUsuario}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded font-semibold"
-                  >
-                    Crear
-                  </button>
-                  <button
-                    onClick={() => setMostrarFormulario(false)}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded font-semibold"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Lista de usuarios o mensaje de bloqueo */}
-          {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
-            <div className="flex flex-wrap gap-2 justify-center">
-              {usuarios
-                .filter(user => user.usuario !== "admin")
-                .map((user) => (
-                  <button
-                    key={user.id}
-                    className={`rounded px-3 py-1 font-semibold flex items-center gap-2 ${
-                      usuarioSeleccionado?.id === user.id
-                        ? "bg-green-500 text-white"
-                        : "bg-white text-black"
-                    }`}
-                    onClick={() => {
-                      setUsuarioSeleccionado(user);
-                      setPassword("");
-                    }}
-                  >
-                    <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">
-                      {user.rol}
-                    </span>
-                    {user.usuario}
-                  </button>
-                ))}
-            </div>
-          ) : (
-            <div className="text-center">
-              <div className="text-yellow-400 mb-2">
-                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Usuario Admin Bloqueado
-              </h3>
-              <p className="text-sm text-gray-300 mb-3">
-                El usuario "admin" predeterminado está bloqueado por seguridad. 
-                Debes crear un nuevo usuario para acceder al sistema.
-              </p>
-              <button
-                onClick={() => setMostrarFormulario(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded font-semibold flex items-center justify-center gap-2 mx-auto"
-              >
-                <FaPlus />
-                Crear Nuevo Usuario
-              </button>
-            </div>
+        <div className="bg-[#2e2e2e] p-3 rounded mb-4">
+          <p className="text-sm text-center mb-2">
+            Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
+          </p>
+          {usuarios.filter(user => user.usuario !== "admin").length < restauranteInfo.cantUsuarios && (
+            
           )}
         </div>
+
+        {mostrarFormulario && (
+          <div className="bg-[#2e2e2e] p-4 rounded mb-4">
+            <h3 className="text-lg font-semibold mb-3">Crear Nuevo Usuario</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nombre de usuario"
+                value={nuevoUsuario.usuario}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })
+                }
+                className="w-full p-2 rounded text-black"
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={nuevoUsuario.password}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
+                }
+                className="w-full p-2 rounded text-black"
+              />
+              <select
+                value={nuevoUsuario.rol}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
+                }
+                className="w-full p-2 rounded text-black"
+              >
+                <option value="usuario">Usuario</option>
+                <option value="admin">Administrador</option>
+              </select>
+              <input
+                type="url"
+                placeholder="URL de imagen (opcional)"
+                value={nuevoUsuario.imagen}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, imagen: e.target.value })
+                }
+                className="w-full p-2 rounded text-black"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCrearUsuario}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded font-semibold"
+                >
+                  Crear
+                </button>
+                <button
+                  onClick={() => setMostrarFormulario(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded font-semibold"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filtrar usuarios para excluir "admin" */}
+        {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
+          <div className="bg-[#2e2e2e] p-3 rounded justify-center flex flex-wrap gap-2 mb-4">
+            {usuarios
+              .filter(user => user.usuario !== "admin")
+              .map((user) => (
+                <button
+                  key={user.id}
+                  className={`rounded px-3 py-1 font-semibold flex items-center gap-2 ${
+                    usuarioSeleccionado?.id === user.id
+                      ? "bg-green-500 text-white"
+                      : "bg-white text-black"
+                  }`}
+                  onClick={() => {
+                    setUsuarioSeleccionado(user);
+                    setPassword("");
+                  }}
+                >
+                  <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">
+                    {user.rol}
+                  </span>
+                  {user.usuario}
+                </button>
+              ))}
+          </div>
+        ) : (
+          <div className="bg-[#2e2e2e] p-4 rounded mb-4 text-center">
+            <div className="text-yellow-400 mb-2">
+              <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Usuario Admin Bloqueado
+            </h3>
+            <p className="text-sm text-gray-300 mb-3">
+              El usuario "admin" predeterminado está bloqueado por seguridad. 
+              Debes crear un nuevo usuario para acceder al sistema.
+            </p>
+            <button
+              onClick={() => setMostrarFormulario(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded font-semibold flex items-center justify-center gap-2 mx-auto"
+            >
+              <FaPlus />
+              Crear Nuevo Usuario
+            </button>
+          </div>
+        )}
 
         
 
