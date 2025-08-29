@@ -1,0 +1,215 @@
+import { useState, useEffect } from "react";
+
+const usePedidosCocina = () => {
+  const [pedidos, setPedidos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Función para obtener el restaurantId desde localStorage
+  const getRestaurantId = () => {
+    if (typeof window !== "undefined") {
+      const restaurantId = localStorage.getItem("restauranteId");
+      if (!restaurantId) {
+        throw new Error("No se encontró el ID del restaurante");
+      }
+      return restaurantId;
+    }
+    return null;
+  };
+
+  // Obtener todos los pedidos de cocina
+  const fetchPedidos = async (estado = null) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const restauranteId = getRestaurantId();
+      let url = `/api/pedidos-cocina?restauranteId=${restauranteId}`;
+
+      if (estado) {
+        url += `&estado=${estado}`;
+      }
+
+      console.log("🔍 Fetching pedidos desde:", url);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("Error al obtener los pedidos");
+      }
+
+      const data = await response.json();
+      console.log("📊 Pedidos obtenidos:", data.length, "pedidos");
+      setPedidos(data);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error al obtener pedidos:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Agregar un nuevo pedido a la lista (para notificaciones en tiempo real)
+  const addNewPedido = (nuevoPedido) => {
+    setPedidos(prev => [nuevoPedido, ...prev]);
+  };
+
+  // Crear un nuevo pedido de cocina
+  const crearPedido = async (pedidoData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const restauranteId = getRestaurantId();
+
+      const response = await fetch("/api/pedidos-cocina", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          restauranteId,
+          ...pedidoData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al crear el pedido");
+      }
+
+      const data = await response.json();
+
+      // Agregar el nuevo pedido a la lista
+      setPedidos((prev) => [data, ...prev]);
+
+      return data;
+    } catch (err) {
+      setError(err.message);
+      console.error("Error al crear pedido:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Actualizar estado de un pedido
+  const actualizarEstadoPedido = async (pedidoId, nuevoEstado) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const restauranteId = getRestaurantId();
+
+      const response = await fetch("/api/pedidos-cocina", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          restauranteId,
+          pedidoId,
+          nuevoEstado,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar el pedido");
+      }
+
+      // Actualizar el pedido en el estado local
+      setPedidos((prev) =>
+        prev.map((pedido) =>
+          pedido.id === pedidoId
+            ? { ...pedido, estado: nuevoEstado, updatedAt: new Date() }
+            : pedido
+        )
+      );
+
+      return true;
+    } catch (err) {
+      setError(err.message);
+      console.error("Error al actualizar pedido:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eliminar un pedido del historial
+  const eliminarPedido = async (pedidoId) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const restauranteId = getRestaurantId();
+
+      const response = await fetch("/api/pedidos-cocina", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          restauranteId,
+          pedidoId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al eliminar el pedido");
+      }
+
+      // Remover el pedido del estado local
+      setPedidos((prev) => prev.filter((pedido) => pedido.id !== pedidoId));
+
+      console.log("🗑️ Pedido eliminado del historial:", pedidoId);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      console.error("Error al eliminar pedido:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Obtener pedidos por estado
+  const getPedidosPorEstado = (estado) => {
+    return pedidos.filter((pedido) => pedido.estado === estado);
+  };
+
+  // Obtener pedidos pendientes (para "Primeros Pedidos")
+  const getPedidosPendientes = () => {
+    return getPedidosPorEstado("pendiente");
+  };
+
+  // Obtener pedidos en preparación (para "Primeros Pedidos")
+  const getPedidosEnPreparacion = () => {
+    return getPedidosPorEstado("en_preparacion");
+  };
+
+  // Obtener pedidos listos (para "Pedidos Hechos")
+  const getPedidosListos = () => {
+    return getPedidosPorEstado("listo");
+  };
+
+  // Cargar pedidos al montar el componente
+  useEffect(() => {
+    console.log("🍳 Hook usePedidosCocina: Iniciando...");
+    fetchPedidos();
+  }, []);
+
+  return {
+    pedidos,
+    loading,
+    error,
+    fetchPedidos,
+    crearPedido,
+    actualizarEstadoPedido,
+    addNewPedido,
+    getPedidosPorEstado,
+    getPedidosPendientes,
+    getPedidosEnPreparacion,
+    getPedidosListos,
+  };
+};
+
+export default usePedidosCocina;
