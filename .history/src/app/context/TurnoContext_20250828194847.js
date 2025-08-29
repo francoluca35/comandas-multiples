@@ -47,6 +47,18 @@ export const TurnoProvider = ({ children }) => {
     };
 
     cargarTurno();
+
+    // Escuchar evento de login completado para recargar turno
+    const handleLoginComplete = () => {
+      console.log("🔄 Login completado detectado, recargando estado del turno");
+      cargarTurno();
+    };
+
+    window.addEventListener("userLoginComplete", handleLoginComplete);
+    
+    return () => {
+      window.removeEventListener("userLoginComplete", handleLoginComplete);
+    };
   }, []);
 
   const abrirTurno = () => {

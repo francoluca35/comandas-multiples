@@ -239,14 +239,38 @@ function Login() {
     });
 
     // Redirigir después de aceptar la alerta
-    // IMPORTANTE: Usar window.location.href para forzar recarga completa y asegurar que todos los contextos se inicialicen correctamente
+    // IMPORTANTE: Usar router.push en lugar de window.location.href para preservar credenciales
     setTimeout(() => {
-      console.log("🔄 Redirigiendo al sistema principal con recarga completa...");
+      console.log("🔄 Redirigiendo al sistema principal...");
       console.log("🛡️ Preservando credenciales biométricas durante la redirección");
       
-      // Usar window.location.href para forzar recarga completa
-      // Esto asegura que todos los contextos se inicialicen correctamente desde el localStorage
-      window.location.href = "/home-comandas/home";
+      // Forzar actualización de contextos antes de redirigir
+      console.log("🔄 Forzando actualización de contextos...");
+      
+      // Disparar múltiples eventos para asegurar que todos los contextos se actualicen
+      if (typeof window !== "undefined") {
+        // Primer disparo inmediato
+        window.dispatchEvent(new CustomEvent("userLoginComplete", {
+          detail: { userData }
+        }));
+        
+        // Segundo disparo después de un breve delay
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("userLoginComplete", {
+            detail: { userData }
+          }));
+        }, 100);
+        
+        // Tercer disparo después de otro delay
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("userLoginComplete", {
+            detail: { userData }
+          }));
+        }, 500);
+      }
+      
+      // Usar router.push en lugar de window.location.href para evitar recarga completa
+      router.push("/home-comandas/home");
     }, 100);
   };
 

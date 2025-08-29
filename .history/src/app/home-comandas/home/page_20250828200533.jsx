@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Sidebar, { useSidebar, SidebarProvider } from "./components/Sidebar";
 
 import TurnoCard from "./components/TurnoCerradoCard";
@@ -122,7 +122,36 @@ function TurnoView() {
 function Home() {
   const { turnoAbierto } = useTurno();
 
-  console.log("🏠 Home renderizando - turnoAbierto:", turnoAbierto);
+  // Forzar actualización de contextos cuando se carga la página
+  useEffect(() => {
+    console.log("🏠 Página Home cargada, verificando contextos...");
+    
+    // Verificar si hay datos de autenticación
+    const usuario = localStorage.getItem("usuario");
+    const rol = localStorage.getItem("rol");
+    const usuarioId = localStorage.getItem("usuarioId");
+    const nombreCompleto = localStorage.getItem("nombreCompleto");
+    
+    if (usuario && rol && usuarioId && nombreCompleto) {
+      console.log("✅ Datos de autenticación encontrados, disparando evento de actualización");
+      
+      // Disparar evento para forzar actualización de contextos
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("userLoginComplete", {
+          detail: { 
+            userData: {
+              usuario,
+              rol,
+              usuarioId,
+              nombreCompleto
+            }
+          }
+        }));
+      }
+    } else {
+      console.log("❌ No hay datos de autenticación completos");
+    }
+  }, []);
 
   return (
     <SidebarProvider>
