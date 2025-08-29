@@ -282,94 +282,103 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex justify-center p-4">
-      <div className="bg-[#1c1c1c] h-full p-6 rounded-lg shadow-lg w-[400px] text-white">
-        <div className="flex items-center justify-center mb-4 text-white text-xl font-semibold">
-          <FaUsers className="mr-2" />
-          {restauranteInfo.nombre}
+    <div 
+      className="min-h-screen flex justify-center items-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/Assets/fondo-prelogin.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat"
+      }}
+    >
+      {/* Overlay oscuro para mejorar legibilidad */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+      
+      {/* Panel principal */}
+      <div className="relative z-10 bg-violet-950/50 bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white border-opacity-20 w-full max-w-md">
+        {/* Título */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-white uppercase tracking-wide">
+            FRANCOMPUTER
+          </h1>
+          <p className="text-white text-sm mt-1">
+            Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
+          </p>
         </div>
 
-        {/* Recuadro unificado para usuarios */}
-        <div className="bg-[#2e2e2e] p-4 rounded mb-4">
-          {/* Conteo de usuarios */}
-          <div className="mb-3">
-            <p className="text-sm text-center text-gray-300">
-              Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
-            </p>
-          </div>
-
-          {/* Formulario de creación */}
-          {mostrarFormulario && (
-            <div className="mb-4 p-3 bg-[#1c1c1c] rounded">
-              <h3 className="text-lg font-semibold mb-3 text-white">Crear Nuevo Usuario</h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nombre de usuario"
-                  value={nuevoUsuario.usuario}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <input
-                  type="password"
-                  placeholder="Contraseña"
-                  value={nuevoUsuario.password}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <select
-                  value={nuevoUsuario.rol}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
+        {/* Formulario de creación */}
+        {mostrarFormulario && (
+          <div className="mb-6 p-4 bg-black bg-opacity-40 rounded-xl border border-white border-opacity-20">
+            <h3 className="text-lg font-semibold mb-3 text-white">Crear Nuevo Usuario</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nombre de usuario"
+                value={nuevoUsuario.usuario}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })
+                }
+                className="w-full p-3 rounded-lg text-black bg-white"
+              />
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={nuevoUsuario.password}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
+                }
+                className="w-full p-3 rounded-lg text-black bg-white"
+              />
+              <select
+                value={nuevoUsuario.rol}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
+                }
+                className="w-full p-3 rounded-lg text-black bg-white"
+              >
+                <option value="usuario">Usuario</option>
+                <option value="admin">Administrador</option>
+              </select>
+              <input
+                type="url"
+                placeholder="URL de imagen (opcional)"
+                value={nuevoUsuario.imagen}
+                onChange={(e) =>
+                  setNuevoUsuario({ ...nuevoUsuario, imagen: e.target.value })
+                }
+                className="w-full p-3 rounded-lg text-black bg-white"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCrearUsuario}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors"
                 >
-                  <option value="usuario">Usuario</option>
-                  <option value="admin">Administrador</option>
-                </select>
-                <input
-                  type="url"
-                  placeholder="URL de imagen (opcional)"
-                  value={nuevoUsuario.imagen}
-                  onChange={(e) =>
-                    setNuevoUsuario({ ...nuevoUsuario, imagen: e.target.value })
-                  }
-                  className="w-full p-2 rounded text-black"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCrearUsuario}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded font-semibold"
-                  >
-                    Crear
-                  </button>
-                  <button
-                    onClick={() => setMostrarFormulario(false)}
-                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded font-semibold"
-                  >
-                    Cancelar
-                  </button>
-                </div>
+                  Crear
+                </button>
+                <button
+                  onClick={() => setMostrarFormulario(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Lista de usuarios o mensaje de bloqueo */}
-          {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
+        {/* Lista de usuarios */}
+        {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
+          <div className="mb-6">
             <div className="flex flex-wrap gap-2 justify-center">
               {usuarios
                 .filter(user => user.usuario !== "admin")
                 .map((user) => (
                   <button
                     key={user.id}
-                    className={`rounded px-3 py-1 font-semibold flex items-center gap-2 ${
+                    className={`rounded-lg px-4 py-2 font-semibold flex items-center gap-2 transition-all duration-200 ${
                       usuarioSeleccionado?.id === user.id
-                        ? "bg-green-500 text-white"
-                        : "bg-white text-black"
+                        ? "bg-green-500 text-white shadow-lg"
+                        : "bg-white text-black hover:bg-gray-100"
                     }`}
                     onClick={() => {
                       setUsuarioSeleccionado(user);
@@ -383,62 +392,61 @@ function Login() {
                   </button>
                 ))}
             </div>
-          ) : (
-            <div className="text-center">
-              <div className="text-yellow-400 mb-2">
-                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Usuario Admin Bloqueado
-              </h3>
-              <p className="text-sm text-gray-300 mb-3">
-                El usuario "admin" predeterminado está bloqueado por seguridad. 
-                Debes crear un nuevo usuario para acceder al sistema.
-              </p>
-              <button
-                onClick={() => setMostrarFormulario(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded font-semibold flex items-center justify-center gap-2 mx-auto"
-              >
-                <FaPlus />
-                Crear Nuevo Usuario
-              </button>
+          </div>
+        ) : (
+          <div className="text-center mb-6">
+            <div className="text-yellow-400 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
             </div>
-          )}
-        </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Usuario Admin Bloqueado
+            </h3>
+            <p className="text-sm text-gray-300 mb-4">
+              El usuario "admin" predeterminado está bloqueado por seguridad. 
+              Debes crear un nuevo usuario para acceder al sistema.
+            </p>
+            <button
+              onClick={() => setMostrarFormulario(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 mx-auto transition-colors"
+            >
+              <FaPlus />
+              Crear Nuevo Usuario
+            </button>
+          </div>
+        )}
 
-        
-
+        {/* Sección de autenticación */}
         {usuarioSeleccionado && (
-          <div className="mb-4">
+          <div className="mb-6">
             {/* Método de autenticación */}
             <div className="mb-4">
-              <label className="block text-sm mb-2 text-white">
+              <label className="block text-sm mb-3 text-white font-medium">
                 Método de autenticación para <strong>{usuarioSeleccionado.usuario}</strong>:
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setAuthMethod("password")}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
                     authMethod === "password"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                      : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500"
+                      ? "border-blue-500 bg-blue-500/20 text-blue-300"
+                      : "border-white border-opacity-30 bg-white bg-opacity-10 text-white hover:bg-opacity-20"
                   }`}
                 >
-                  <FaKey className="w-5 h-5" />
+                  <FaKey className="w-6 h-6" />
                   <span className="text-sm font-medium">Contraseña</span>
                 </button>
                 
                 <button
                   onClick={() => setAuthMethod("biometric")}
-                  className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-2 ${
                     authMethod === "biometric"
-                      ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                      : "border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500"
+                      ? "border-blue-500 bg-blue-500/20 text-blue-300"
+                      : "border-white border-opacity-30 bg-white bg-opacity-10 text-white hover:bg-opacity-20"
                   }`}
                 >
-                  <FaFingerprint className="w-5 h-5" />
+                  <FaFingerprint className="w-6 h-6" />
                   <span className="text-sm font-medium">Huella Digital</span>
                   {!usuarioSeleccionado.biometricEnabled && (
                     <span className="text-xs text-red-400">No configurada</span>
@@ -447,64 +455,15 @@ function Login() {
               </div>
             </div>
 
-            
-
-            {/* Configurar huella digital si no está configurada */}
-            {authMethod === "biometric" && !usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <p className="text-yellow-400 text-sm mb-2">
-                  Este usuario no tiene configurada la huella digital.
-                </p>
-                <p className="text-yellow-300 text-xs mb-2">
-                  Para configurar huellas digitales, inicia sesión con contraseña y ve a Configuración.
-                </p>
-                <button
-                  onClick={() => setAuthMethod("password")}
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 rounded font-semibold flex items-center justify-center space-x-2"
-                >
-                  <FaKey className="w-4 h-4" />
-                  <span>Usar Contraseña</span>
-                </button>
-              </div>
-            )}
-
-            {/* Información si ya tiene huellas configuradas */}
-            {authMethod === "biometric" && usuarioSeleccionado.biometricEnabled && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-green-400 text-sm mb-2">
-                  ✅ Huellas digitales configuradas ({usuarioSeleccionado.biometricCredentials?.length || 0} huellas)
-                </p>
-                <p className="text-green-300 text-xs">
-                  Usa tu huella digital para iniciar sesión rápidamente.
-                </p>
-              </div>
-            )}
-
-            {/* Mensaje si no es compatible */}
-            {authMethod === "biometric" && (!biometricSupported || !biometricAvailable) && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-red-400 text-sm mb-2">
-                  <strong>Tu dispositivo no es compatible con autenticación biométrica:</strong>
-                </p>
-                <ul className="text-red-300 text-xs space-y-1">
-                  {!biometricSupported && <li>• Tu navegador no soporta Web Authentication API</li>}
-                  {!biometricAvailable && <li>• Tu dispositivo no tiene sensor de huella digital</li>}
-                </ul>
-                <p className="text-red-300 text-xs mt-2">
-                  Usa el método de contraseña para acceder al sistema.
-                </p>
-              </div>
-            )}
-
-            {/* Campo de contraseña (solo para método de contraseña) */}
+            {/* Campo de contraseña */}
             {authMethod === "password" && (
               <div className="mb-4">
-                <label className="block text-sm mb-1 text-white">
+                <label className="block text-sm mb-2 text-white font-medium">
                   Contraseña:
                 </label>
                 <input
                   type="password"
-                  className="w-full p-2 rounded text-black"
+                  className="w-full p-3 rounded-lg text-black bg-white"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
@@ -517,20 +476,20 @@ function Login() {
             <button
               onClick={handleLogin}
               disabled={authMethod === "password" && !password}
-              className={`w-full py-3 rounded font-bold flex items-center justify-center space-x-2 ${
+              className={`w-full py-3 rounded-lg font-bold flex items-center justify-center space-x-2 transition-all duration-200 ${
                 authMethod === "password" && !password
                   ? "bg-gray-500 text-gray-300 cursor-not-allowed"
-                  : "bg-green-500 hover:bg-green-600 text-white"
+                  : "bg-green-500 hover:bg-green-600 text-white shadow-lg"
               }`}
             >
               {authMethod === "password" ? (
                 <>
-                  <FaKey className="w-4 h-4" />
+                  <FaKey className="w-5 h-5" />
                   <span>Ingresar con Contraseña</span>
                 </>
               ) : (
                 <>
-                  <FaFingerprint className="w-4 h-4" />
+                  <FaFingerprint className="w-5 h-5" />
                   <span>Ingresar con Huella Digital</span>
                 </>
               )}
@@ -538,27 +497,26 @@ function Login() {
           </div>
         )}
 
+        {/* Botones inferiores */}
         <div className="flex items-center justify-between">
           <button
-            className="bg-[#4da6ff] text-black font-bold px-4 py-2 rounded"
+            className="bg-gray-500 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-lg transition-colors"
             onClick={() => router.push("/home-comandas/register")}
           >
             Registrate
           </button>
 
           <button
-            className="bg-[#c084fc] text-black font-semibold px-4 py-2 rounded flex items-center gap-1"
+            className="bg-orange-500 hover:bg-orange-600 text-black font-semibold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             onClick={() => window.location.reload()}
           >
             <FaSyncAlt />
             Refrescar
           </button>
         </div>
-
-        
       </div>
 
-      {/* Modal de configuración de huella digital - SOLO para configuración inicial */}
+      {/* Modal de configuración de huella digital */}
       <BiometricSetupModal
         isOpen={showBiometricSetup}
         onClose={() => setShowBiometricSetup(false)}
