@@ -115,7 +115,13 @@ export const AuthProvider = ({ children }) => {
         checkAuth();
       };
 
-      // Verificar autenticación cada 3 segundos para detectar cambios
+      // Escuchar evento de login completado
+      const handleLoginComplete = (event) => {
+        console.log("🔄 Login completado detectado, actualizando contexto inmediatamente");
+        checkAuth();
+      };
+
+      // Verificar autenticación cada 2 segundos para detectar cambios
       const interval = setInterval(() => {
         const restauranteId = localStorage.getItem("restauranteId");
         const usuarioLocal = localStorage.getItem("usuario");
@@ -125,12 +131,14 @@ export const AuthProvider = ({ children }) => {
           console.log("🔄 Detectados datos de autenticación, recargando contexto");
           checkAuth();
         }
-      }, 3000);
+      }, 2000);
 
       window.addEventListener("storage", handleStorageChange);
+      window.addEventListener("userLoginComplete", handleLoginComplete);
       
       return () => {
         window.removeEventListener("storage", handleStorageChange);
+        window.removeEventListener("userLoginComplete", handleLoginComplete);
         clearInterval(interval);
       };
     }
