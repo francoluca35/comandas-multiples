@@ -137,27 +137,14 @@ function Login() {
         // No tiene huella digital configurada, preguntar si quiere configurarla
         const result = await Swal.fire({
           title: "¿Configurar Huella Digital?",
-          html: `
-            <div class="text-left">
-              <p class="mb-3">¿Te gustaría configurar tu huella digital para futuros inicios de sesión?</p>
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                <p class="text-blue-800 font-medium mb-1">✅ Beneficios:</p>
-                <ul class="text-blue-700 space-y-1">
-                  <li>• Inicio de sesión más rápido</li>
-                  <li>• Mayor seguridad</li>
-                  <li>• No necesitas recordar contraseñas</li>
-                </ul>
-              </div>
-            </div>
-          `,
+          text: "¿Te gustaría configurar tu huella digital para futuros inicios de sesión?",
           icon: "question",
           showCancelButton: true,
-          confirmButtonText: "Sí, configurar ahora",
-          cancelButtonText: "No, continuar sin configurar",
+          confirmButtonText: "Sí, configurar",
+          cancelButtonText: "No, continuar",
           confirmButtonColor: "#4da6ff",
           cancelButtonColor: "#6c757d",
-          reverseButtons: true,
-          width: "500px"
+          reverseButtons: true
         });
 
         if (result.isConfirmed) {
@@ -556,20 +543,6 @@ function Login() {
                 </>
               )}
             </button>
-
-            {/* Botón para configurar huella digital manualmente */}
-            {usuarioSeleccionado && authMethod === "password" && (
-              <button
-                onClick={() => {
-                  setSelectedUserForBiometric(usuarioSeleccionado);
-                  setShowBiometricSetup(true);
-                }}
-                className="w-full mt-3 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
-              >
-                <FaFingerprint className="w-4 h-4" />
-                <span>Configurar Huella Digital</span>
-              </button>
-            )}
           </div>
         )}
 

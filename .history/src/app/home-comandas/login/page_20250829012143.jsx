@@ -137,27 +137,14 @@ function Login() {
         // No tiene huella digital configurada, preguntar si quiere configurarla
         const result = await Swal.fire({
           title: "¿Configurar Huella Digital?",
-          html: `
-            <div class="text-left">
-              <p class="mb-3">¿Te gustaría configurar tu huella digital para futuros inicios de sesión?</p>
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                <p class="text-blue-800 font-medium mb-1">✅ Beneficios:</p>
-                <ul class="text-blue-700 space-y-1">
-                  <li>• Inicio de sesión más rápido</li>
-                  <li>• Mayor seguridad</li>
-                  <li>• No necesitas recordar contraseñas</li>
-                </ul>
-              </div>
-            </div>
-          `,
+          text: "¿Te gustaría configurar tu huella digital para futuros inicios de sesión?",
           icon: "question",
           showCancelButton: true,
-          confirmButtonText: "Sí, configurar ahora",
-          cancelButtonText: "No, continuar sin configurar",
+          confirmButtonText: "Sí, configurar",
+          cancelButtonText: "No, continuar",
           confirmButtonColor: "#4da6ff",
           cancelButtonColor: "#6c757d",
-          reverseButtons: true,
-          width: "500px"
+          reverseButtons: true
         });
 
         if (result.isConfirmed) {
@@ -313,24 +300,6 @@ function Login() {
       
       // Usar router.refresh() en lugar de window.location.reload()
       router.refresh();
-    }
-  };
-
-  const handleBiometricSetupClose = () => {
-    // Si estamos en el flujo de configuración post-login y el usuario cierra el modal
-    if (selectedUserForBiometric && authMethod === "password") {
-      console.log("❌ Usuario canceló configuración de huella digital después del login");
-      console.log("🔄 Completando login sin configuración biométrica...");
-      
-      // Completar el login de todas formas
-      completeLogin(selectedUserForBiometric);
-      
-      // Limpiar el estado
-      setSelectedUserForBiometric(null);
-      setShowBiometricSetup(false);
-    } else {
-      // Flujo normal de cierre
-      setShowBiometricSetup(false);
     }
   };
 
@@ -556,20 +525,6 @@ function Login() {
                 </>
               )}
             </button>
-
-            {/* Botón para configurar huella digital manualmente */}
-            {usuarioSeleccionado && authMethod === "password" && (
-              <button
-                onClick={() => {
-                  setSelectedUserForBiometric(usuarioSeleccionado);
-                  setShowBiometricSetup(true);
-                }}
-                className="w-full mt-3 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
-              >
-                <FaFingerprint className="w-4 h-4" />
-                <span>Configurar Huella Digital</span>
-              </button>
-            )}
           </div>
         )}
 
@@ -595,63 +550,15 @@ function Login() {
       {/* Modal de configuración de huella digital */}
       <BiometricSetupModal
         isOpen={showBiometricSetup}
-        onClose={handleBiometricSetupClose}
+        onClose={() => setShowBiometricSetup(false)}
         onSuccess={handleBiometricSetupSuccess}
         userId={selectedUserForBiometric?.id}
         username={selectedUserForBiometric?.usuario}
         existingCredentials={selectedUserForBiometric?.biometricCredentials || []}
         isInitialSetup={true}
-        isPostLoginSetup={authMethod === "password" && selectedUserForBiometric}
       />
     </div>
   );
 }
-
-// Componente para mostrar el botón de usuario con indicador de huella digital
-const UserButton = ({ user, isSelected, onSelect, getLocalCredentials }) => {
-  const [hasBiometric, setHasBiometric] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkBiometric = async () => {
-      try {
-        const credentials = await getLocalCredentials(user.id);
-        setHasBiometric(credentials.length > 0);
-      } catch (error) {
-        console.error("Error verificando huella digital:", error);
-        setHasBiometric(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkBiometric();
-  }, [user.id, getLocalCredentials]);
-
-  return (
-    <button
-      className={`rounded-lg px-4 py-2 font-semibold flex items-center gap-2 transition-all duration-200 ${
-        isSelected
-          ? "bg-green-500 text-white shadow-lg"
-          : "bg-white text-black hover:bg-gray-100"
-      }`}
-      onClick={onSelect}
-    >
-      <span className="bg-gray-200 text-black rounded-full px-2 py-0.5 text-sm font-bold">
-        {user.rol}
-      </span>
-      <span>{user.usuario}</span>
-      {!loading && (
-        <div className="flex items-center gap-1">
-          {hasBiometric ? (
-            <FaFingerprint className="w-3 h-3 text-green-600" title="Huella digital configurada" />
-          ) : (
-            <FaKey className="w-3 h-3 text-gray-400" title="Solo contraseña" />
-          )}
-        </div>
-      )}
-    </button>
-  );
-};
 
 export default Login;
