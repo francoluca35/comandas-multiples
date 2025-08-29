@@ -355,11 +355,6 @@ const BiometricSetupModal = ({ isOpen, onClose, onSuccess, userId, username, exi
                 <p className="text-sm text-green-400">
                   ✅ <strong>Importante:</strong> Tu huella digital se ha guardado localmente en tu dispositivo y se mantendrá incluso si cierras el navegador.
                 </p>
-                {isPostLoginSetup && (
-                  <p className="text-sm text-green-400 mt-2">
-                    🚀 <strong>Próximo acceso:</strong> Podrás usar tu huella digital para iniciar sesión de forma más rápida y segura.
-                  </p>
-                )}
               </div>
             </div>
           )}

@@ -264,10 +264,7 @@ const BiometricSetupModal = ({ isOpen, onClose, onSuccess, userId, username, exi
                     }
                   </h3>
                     <p className="text-slate-400">
-                      {isPostLoginSetup 
-                        ? "Configura tu huella digital para poder iniciar sesión de forma más rápida y segura en el futuro."
-                        : "Tu dispositivo soporta autenticación por huella digital."
-                      }
+                      Tu dispositivo soporta autenticación por huella digital.
                     </p>
                   </div>
 
@@ -299,14 +296,7 @@ const BiometricSetupModal = ({ isOpen, onClose, onSuccess, userId, username, exi
                     ) : (
                       <>
                         <FaPlus className="w-4 h-4" />
-                        <span>
-                          {isPostLoginSetup 
-                            ? "Configurar Huella Digital"
-                            : isInitialSetup 
-                              ? "Configurar Huella Digital" 
-                              : "Agregar Huella Digital"
-                          }
-                        </span>
+                        <span>{isInitialSetup ? "Configurar Huella Digital" : "Agregar Huella Digital"}</span>
                       </>
                     )}
                   </button>
@@ -341,10 +331,7 @@ const BiometricSetupModal = ({ isOpen, onClose, onSuccess, userId, username, exi
               </div>
               <h3 className="text-lg font-semibold text-white">¡Configuración Exitosa!</h3>
               <p className="text-slate-400">
-                {isPostLoginSetup 
-                  ? `Tu huella digital "${credentialName}" ha sido configurada correctamente. Ahora podrás iniciar sesión con tu huella digital en futuros accesos.`
-                  : `Tu huella digital "${credentialName}" ha sido configurada correctamente.`
-                }
+                Tu huella digital "{credentialName}" ha sido configurada correctamente.
               </p>
               {!isInitialSetup && (
                 <p className="text-slate-400 text-sm">
@@ -355,11 +342,6 @@ const BiometricSetupModal = ({ isOpen, onClose, onSuccess, userId, username, exi
                 <p className="text-sm text-green-400">
                   ✅ <strong>Importante:</strong> Tu huella digital se ha guardado localmente en tu dispositivo y se mantendrá incluso si cierras el navegador.
                 </p>
-                {isPostLoginSetup && (
-                  <p className="text-sm text-green-400 mt-2">
-                    🚀 <strong>Próximo acceso:</strong> Podrás usar tu huella digital para iniciar sesión de forma más rápida y segura.
-                  </p>
-                )}
               </div>
             </div>
           )}
