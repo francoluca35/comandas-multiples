@@ -852,6 +852,15 @@ function ProductosContent() {
         </div>
       )}
 
+      {/* Barcode Manager Modal */}
+      <ProductBarcodeManager
+        isOpen={showBarcodeManager}
+        onClose={() => setShowBarcodeManager(false)}
+        onProductUpdate={() => {
+          fetchAllProducts();
+          setShowBarcodeManager(false);
+        }}
+      />
     </div>
   );
 }
