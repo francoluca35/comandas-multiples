@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase'; 
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import NativeBarcodeScanner from './NativeBarcodeScanner';
+import globalProductService from '../services/globalProductService';
 
 const SimpleProductManager = ({ 
   isOpen, 
@@ -35,6 +37,7 @@ const SimpleProductManager = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -61,7 +64,98 @@ const SimpleProductManager = ({
     }
   }, [product]);
 
+  const handleBarcodeSearch = async (barcode) => {
+    if (!barcode.trim()) return;
+    
+    setIsSearching(true);
+    setError(null);
+    
+    try {
+      const restaurantId = localStorage.getItem('restauranteId');
+      if (!restaurantId) {
+        throw new Error('No se encontró el ID del restaurante');
+      }
 
+      // 1. Primero buscar en la base de datos local
+      const productRef = doc(db, 'restaurantes', restaurantId, 'productos', barcode);
+      const productSnap = await getDoc(productRef);
+
+      if (productSnap.exists()) {
+        const existingProduct = productSnap.data();
+        setProductData(prev => ({
+          ...prev,
+          ...existingProduct,
+          codigoBarras: barcode
+        }));
+        setSuccess(`✅ Producto local encontrado: ${existingProduct.nombre}`);
+        return;
+      }
+
+      // 2. Si no existe localmente, buscar en bases de datos globales
+      console.log('🔍 Producto no encontrado localmente, buscando en bases de datos globales...');
+      const globalResult = await globalProductService.getProductInfo(barcode);
+      
+      if (globalResult && globalResult.success) {
+        const globalProduct = globalResult.data;
+        setProductData(prev => ({
+          ...prev,
+          ...globalProduct,
+          codigoBarras: barcode,
+          // Asegurar que los campos requeridos estén presentes
+          nombre: globalProduct.nombre || 'Producto Genérico',
+          precio: globalProduct.precio || 0,
+          categoria: globalProduct.categoria || 'General',
+          descripcion: globalProduct.descripcion || `Producto con código ${barcode}`,
+          marca: globalProduct.marca || '',
+          proveedor: globalProduct.proveedor || globalProduct.marca || '',
+          stock: globalProduct.stock || 0,
+          costo: globalProduct.costo || 0
+        }));
+        
+        const sourceInfo = globalResult.metadata?.fuente || 'Base de datos global';
+        setSuccess(`🌍 Producto encontrado en ${sourceInfo}: ${globalProduct.nombre}`);
+        
+        // Mostrar información adicional si está disponible
+        if (globalResult.metadata) {
+          console.log('📊 Información del producto:', {
+            fuente: globalResult.metadata.fuente,
+            confiabilidad: globalResult.metadata.confiabilidad,
+            esGenerico: globalProduct.esGenerico || false
+          });
+        }
+      } else {
+        // 3. Si no se encuentra en ningún lado, crear producto genérico
+        setProductData(prev => ({
+          ...prev,
+          codigoBarras: barcode,
+          nombre: 'Producto Nuevo',
+          precio: 0,
+          categoria: 'General',
+          descripcion: `Producto con código de barras ${barcode}`,
+          stock: 0,
+          costo: 0
+        }));
+        setError('⚠️ Producto no encontrado en bases de datos globales. Puedes completar la información manualmente.');
+      }
+    } catch (err) {
+      console.error('Error buscando producto:', err);
+      setError('Error al buscar el producto: ' + err.message);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleScanSuccess = (barcode) => {
+    console.log('Código escaneado:', barcode);
+    handleBarcodeSearch(barcode);
+    setShowScanner(false);
+  };
+
+  const handleScanError = (error) => {
+    console.error('Error en escáner:', error);
+    setError('Error al escanear código: ' + error.message);
+    setShowScanner(false);
+  };
 
   const handleSearchProducts = async (searchTerm) => {
     if (!searchTerm.trim()) {
@@ -170,21 +264,13 @@ const SimpleProductManager = ({
       descripcion: '',
       stock: 0,
       proveedor: '',
-      costo: 0,
-      marca: '',
-      imagen: '',
-      nutrientes: {},
-      alérgenos: '',
-      origen: '',
-      etiquetas: '',
-      ecoscore: '',
-      nutriscore: '',
-      esGenerico: false
+      costo: 0
     });
     setError(null);
     setSuccess(null);
     setSearchResults([]);
     setShowSearch(false);
+    setShowScanner(false);
     onClose?.();
   };
 
@@ -251,24 +337,48 @@ const SimpleProductManager = ({
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-gray-800">Código de Barra</h3>
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span>Buscar</span>
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowScanner(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Escanear</span>
+              </button>
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Buscar</span>
+              </button>
+            </div>
           </div>
           
           <input
             type="text"
             value={productData.codigoBarras}
-            onChange={(e) => handleInputChange('codigoBarras', e.target.value)}
+            onChange={(e) => {
+              handleInputChange('codigoBarras', e.target.value);
+              if (e.target.value.trim()) {
+                handleBarcodeSearch(e.target.value);
+              }
+            }}
             placeholder="Código de barra o código de balanza"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+          
+          {isSearching && (
+            <div className="mt-2 flex items-center space-x-2 text-blue-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm">Buscando producto...</span>
+            </div>
+          )}
         </div>
 
         {/* Product Search */}
@@ -483,6 +593,14 @@ const SimpleProductManager = ({
         </div>
       </div>
 
+      {/* Native Barcode Scanner Modal */}
+      <NativeBarcodeScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScanSuccess={handleScanSuccess}
+        onScanError={handleScanError}
+        title="Escanear Código de Barra del Producto"
+      />
     </div>
   );
 };
