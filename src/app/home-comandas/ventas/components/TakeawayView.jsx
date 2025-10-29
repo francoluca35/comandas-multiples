@@ -228,7 +228,7 @@ export default function TakeawayView() {
                   <h2 className="text-xl font-bold text-white">Seleccionar Productos</h2>
                   <p className="text-slate-400 text-xs">Elige los productos para tu pedido</p>
               </div>
-              </div>
+            </div>
                 <button
                 onClick={handleNextToClientData}
                 disabled={selectedProducts.length === 0}
@@ -237,10 +237,10 @@ export default function TakeawayView() {
                 <span className="text-sm">Continuar</span>
                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              </button>
-            </div>
-          </div>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
 
           {/* Filtros */}
           <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/30 to-slate-900/30">

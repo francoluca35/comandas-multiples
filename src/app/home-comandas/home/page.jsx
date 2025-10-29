@@ -13,6 +13,9 @@ import { useTurno } from "@/app/context/TurnoContext";
 import { useRole } from "@/app/context/RoleContext";
 import useOrderReadyNotifications from "../../../hooks/useOrderReadyNotifications";
 import OrderReadyNotification from "../../../components/OrderReadyNotification";
+import MultipleOrderReadyNotifications from "../../../components/MultipleOrderReadyNotifications";
+import { useStockAlertManager } from "../../../hooks/useStockAlertManager";
+import StockLowAlert from "../../../components/StockLowAlert";
 
 function DashboardContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -21,9 +24,21 @@ function DashboardContent() {
   
   // Hook para notificaciones de pedidos listos
   const {
+    notifications,
     lastOrderReadyNotification,
-    clearNotification
+    clearNotification,
+    clearAllNotifications
   } = useOrderReadyNotifications();
+
+  // Hook para alertas de stock bajo
+  const {
+    showAlert,
+    stockBajo,
+    handleCloseAlert,
+    handleRememberLater,
+    handleDontRemind,
+    resetAlerts,
+  } = useStockAlertManager();
 
   return (
     <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
@@ -91,10 +106,18 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* Notificación de pedido listo */}
-      <OrderReadyNotification
-        notification={lastOrderReadyNotification}
+      {/* Notificaciones de pedidos listos */}
+      <MultipleOrderReadyNotifications
+        notifications={notifications}
         onClose={clearNotification}
+      />
+
+      {/* Alerta de stock bajo */}
+      <StockLowAlert
+        isOpen={showAlert}
+        onClose={handleCloseAlert}
+        onRememberLater={handleRememberLater}
+        onDontRemind={handleDontRemind}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
@@ -475,7 +475,7 @@ export const useInventario = () => {
   };
 
   // Obtener productos con stock bajo (entre 1 y 4)
-  const getProductosStockBajo = () => {
+  const getProductosStockBajo = useCallback(() => {
     const bebidasStockBajo = bebidas.filter((bebida) => {
       const stockValue = Number(bebida.stock) || 0;
       return stockValue >= 1 && stockValue <= 4;
@@ -485,10 +485,10 @@ export const useInventario = () => {
       return stockValue >= 1 && stockValue <= 4;
     });
     return [...bebidasStockBajo, ...materiaPrimaStockBajo];
-  };
+  }, [bebidas, materiaPrima]);
 
   // Obtener productos sin stock
-  const getProductosSinStock = () => {
+  const getProductosSinStock = useCallback(() => {
     const bebidasSinStock = bebidas.filter((bebida) => {
       const stockValue = Number(bebida.stock) || 0;
       return stockValue === 0;
@@ -498,10 +498,10 @@ export const useInventario = () => {
       return stockValue === 0;
     });
     return [...bebidasSinStock, ...materiaPrimaSinStock];
-  };
+  }, [bebidas, materiaPrima]);
 
   // Calcular estadísticas del inventario
-  const getInventarioStats = () => {
+  const getInventarioStats = useCallback(() => {
     const totalBebidas = bebidas.length;
     const totalMateriaPrima = materiaPrima.length;
     const totalProductos = totalBebidas + totalMateriaPrima;
@@ -550,7 +550,7 @@ export const useInventario = () => {
       costoStock,
       ganancia,
     };
-  };
+  }, [bebidas, materiaPrima]);
 
   // Función compatible con useStock para estadísticas de stock
   const getStockStats = () => {
