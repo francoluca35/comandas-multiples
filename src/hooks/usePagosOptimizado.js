@@ -193,11 +193,11 @@ export const usePagosOptimizado = () => {
   };
 
   const getEfectivoTotal = () => {
-    return data.dineroActual.efectivo;
+    return data.dineroActual.efectivo + data.ventas.efectivo;
   };
 
   const getVirtualTotal = () => {
-    return data.dineroActual.virtual;
+    return data.dineroActual.virtual + data.ventas.virtual;
   };
 
   const getTotalCajas = () => {

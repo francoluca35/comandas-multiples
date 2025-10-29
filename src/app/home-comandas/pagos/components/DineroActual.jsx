@@ -126,7 +126,7 @@ export default function DineroActual({
       {/* Content - Conditionally visible */}
       {isExpanded && (
         <div className="space-y-4">
-          {/* Dinero Actual Efectivo */}
+          {/* Ventas en Efectivo */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-6 h-6 bg-green-500/20 rounded-md flex items-center justify-center">
@@ -145,18 +145,18 @@ export default function DineroActual({
                 </svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-white text-sm font-medium">Dinero Actual Efectivo</span>
+                <span className="text-white text-sm font-medium">Ventas en Efectivo</span>
                 <span className="text-xs text-slate-400">
-                  Ventas - Egresos en Efectivo
+                  Salón + Takeaway + Delivery
                 </span>
               </div>
             </div>
             <span className="text-lg font-bold text-green-400">
-              {formatDinero(getEfectivoTotal())}
+              {formatDinero(getVentasEfectivo())}
             </span>
           </div>
 
-          {/* Dinero Actual Virtual */}
+          {/* Ventas Virtuales */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-6 h-6 bg-blue-500/20 rounded-md flex items-center justify-center">
@@ -175,18 +175,18 @@ export default function DineroActual({
                 </svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-white text-sm font-medium">Dinero Actual Virtual</span>
+                <span className="text-white text-sm font-medium">Ventas Virtuales</span>
                 <span className="text-xs text-slate-400">
-                  Ventas - Egresos Virtuales
+                  Tarjeta + MercadoPago
                 </span>
               </div>
             </div>
             <span className="text-lg font-bold text-blue-400">
-              {formatDinero(getVirtualTotal())}
+              {formatDinero(getVentasVirtual())}
             </span>
           </div>
 
-          {/* Total Dinero Actual */}
+          {/* Total de Ventas */}
           <div className="pt-2 border-t border-slate-700/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -206,14 +206,14 @@ export default function DineroActual({
                   </svg>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-white text-sm font-medium">Total Dinero Actual</span>
+                  <span className="text-white text-sm font-medium">Total de Ventas</span>
                   <span className="text-xs text-slate-400">
                     Efectivo + Virtual
                   </span>
                 </div>
               </div>
               <span className="text-xl font-bold text-purple-400">
-                {formatDinero(getEfectivoTotal() + getVirtualTotal())}
+                {formatDinero(getVentasEfectivo() + getVentasVirtual())}
               </span>
             </div>
           </div>

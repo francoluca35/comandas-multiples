@@ -5,21 +5,22 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
 
   // Calcular valores usando los datos del hook optimizado
   const egresosTotales = getTotalEgresos();
+  const ingresosRegistrados = getTotalIngresos();
   const ventasEfectivo = getVentasEfectivo();
   const ventasVirtual = getVentasVirtual();
   const ventasTotales = ventasEfectivo + ventasVirtual;
   
-  // El dinero actual ES la suma del efectivo + virtual (ya incluye ventas - egresos)
-  const dineroActualTotal = getEfectivoTotal() + getVirtualTotal();
+  // El dinero actual ES la suma de las ventas (efectivo + virtual)
+  const dineroActualTotal = ventasTotales;
   
-  // Ingresos totales: ventas sin descontar nada
-  const ingresosReales = ventasTotales;
+  // Calcular ingresos totales reales (solo ingresos registrados, que ya incluyen las ventas)
+  const ingresosReales = ingresosRegistrados;
   
-  // Ganancia: ventas - egresos
-  const gananciaPerdida = ventasTotales - egresosTotales;
+  // Calcular rendimiento (ingresos reales - egresos)
+  const rendimiento = ingresosReales - egresosTotales;
 
   // Determinar si es ganancia o pérdida
-  const esGanancia = gananciaPerdida >= 0;
+  const esGanancia = rendimiento >= 0;
   const rendimientoColor = esGanancia ? "text-green-400" : "text-red-400";
   const rendimientoBgColor = esGanancia ? "bg-green-500/20" : "bg-red-500/20";
   const rendimientoIconColor = esGanancia ? "text-green-400" : "text-red-400";
@@ -126,7 +127,7 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
               {formatDinero(ingresosReales)}
             </span>
           </div>
-          <div className="text-xs text-slate-400 mb-4">Ventas sin descontar nada</div>
+          <div className="text-xs text-slate-400 mb-4">Ingresos Registrados (incluye ventas)</div>
 
           {/* Rendimiento (Ganancia/Pérdida) */}
           <div className="flex items-center justify-between mb-4">
@@ -160,7 +161,7 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
               </span>
             </div>
             <span className={`text-xl font-bold ${rendimientoColor}`}>
-              {formatDinero(Math.abs(gananciaPerdida))}
+              {formatDinero(Math.abs(rendimiento))}
             </span>
           </div>
           <div className="text-xs text-slate-400 mb-4">Ingresos Reales - Egresos</div>
@@ -193,15 +194,15 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
               </span>
             </div>
             <div className="flex items-center justify-between text-xs border-t border-slate-600 pt-1 mt-1">
-              <span className="text-slate-300 font-semibold">• Ingresos Totales:</span>
+              <span className="text-slate-300 font-semibold">• Total Ventas:</span>
               <span className="text-green-400 font-bold">
-                {formatDinero(ingresosReales)}
+                {formatDinero(ventasTotales)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs border-t border-slate-600 pt-1 mt-1">
-              <span className="text-slate-300 font-semibold">• Ganancia o Pérdida:</span>
-              <span className={`font-bold ${rendimientoColor}`}>
-                {formatDinero(gananciaPerdida)}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-300">• Otros Ingresos:</span>
+              <span className="text-green-400 font-medium">
+                {formatDinero(ingresosRegistrados - ventasTotales)}
               </span>
             </div>
           </div>

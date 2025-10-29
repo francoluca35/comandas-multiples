@@ -127,11 +127,77 @@ function PagarEmpleadoModal({ isOpen, onClose, onSuccess, data, formatDinero }) 
       // Guardar en la colección de egresos
       await addDoc(collection(db, "restaurantes", restauranteId, "Egresos"), egresoData);
 
-      // No actualizar la caja registradora o dinero virtual aquí
-      // El egreso se registra y la API calcula el dinero actual correctamente
-      console.log("✅ Egreso registrado, el dinero actual se calculará automáticamente");
+      // Actualizar según la forma de pago
+      if (formData.formaPago === "efectivo") {
+        // Actualizar la caja registradora para efectivo
+        const cajaRef = collection(db, "restaurantes", restauranteId, "CajaRegistradora");
+        const cajaSnapshot = await getDocs(cajaRef);
+        
+        if (!cajaSnapshot.empty) {
+          const cajaDoc = cajaSnapshot.docs[0];
+          const cajaData = cajaDoc.data();
+          const aperturaActual = parseFloat(cajaData.Apertura || 0);
+          
+          await updateDoc(cajaDoc.ref, {
+            Apertura: (aperturaActual - monto).toString(),
+            ultimaActualizacion: serverTimestamp()
+          });
+        } else {
+          // Crear caja si no existe
+          await addDoc(cajaRef, {
+            Apertura: (efectivoDisponible - monto).toString(),
+            estado: "activa",
+            nombre: "Caja Principal",
+            fechaCreacion: serverTimestamp(),
+            ultimaActualizacion: serverTimestamp()
+          });
+        }
+      } else {
+        // Actualizar el dinero virtual
+        const dineroRef = collection(db, "restaurantes", restauranteId, "Dinero");
+        const dineroSnapshot = await getDocs(dineroRef);
+        
+        if (!dineroSnapshot.empty) {
+          const dineroDoc = dineroSnapshot.docs[0];
+          const dineroData = dineroDoc.data();
+          const virtualActual = parseFloat(dineroData.Virtual || 0);
+          
+          await updateDoc(dineroDoc.ref, {
+            Virtual: (virtualActual - monto).toString(),
+            fechaActualizacion: serverTimestamp()
+          });
+        } else {
+          // Crear documento si no existe
+          await addDoc(dineroRef, {
+            Efectivo: "0",
+            Virtual: (virtualDisponible - monto).toString(),
+            fechaCreacion: serverTimestamp(),
+            fechaActualizacion: serverTimestamp()
+          });
+        }
+      }
 
-      // El historial se mantiene en la colección de egresos
+      // Registrar la extracción en el historial de la caja si es efectivo
+      if (formData.formaPago === "efectivo") {
+        const cajaRef = collection(db, "restaurantes", restauranteId, "CajaRegistradora");
+        const cajaSnapshot = await getDocs(cajaRef);
+        
+        if (!cajaSnapshot.empty) {
+          const cajaDoc = cajaSnapshot.docs[0];
+          const cajaData = cajaDoc.data();
+          
+          await updateDoc(cajaDoc.ref, {
+            Extraccion: {
+              ...cajaData.Extraccion || {},
+              [new Date().toISOString()]: {
+                importe: monto,
+                motivo: `Pago a empleado - ${formData.nombreEmpleado}`,
+                fecha: serverTimestamp()
+              }
+            }
+          });
+        }
+      }
 
       console.log("✅ Pago a empleado registrado exitosamente");
       onSuccess();
