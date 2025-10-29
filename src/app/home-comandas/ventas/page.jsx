@@ -14,6 +14,7 @@ import DeliveryView from "./components/DeliveryView";
 import HistorialPedidos from "./components/HistorialPedidos";
 import useOrderReadyNotifications from "../../../hooks/useOrderReadyNotifications";
 import OrderReadyNotification from "../../../components/OrderReadyNotification";
+import MultipleOrderReadyNotifications from "../../../components/MultipleOrderReadyNotifications";
 
 function VentasContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -35,8 +36,10 @@ function VentasContent() {
 
   // Hook para notificaciones de pedidos listos
   const {
+    notifications,
     lastOrderReadyNotification,
-    clearNotification
+    clearNotification,
+    clearAllNotifications
   } = useOrderReadyNotifications();
 
   // Cargar mesas al montar el componente
@@ -204,9 +207,9 @@ function VentasContent() {
         <HistorialPedidos onClose={handleCloseHistorial} />
       )}
 
-      {/* Notificación de pedido listo */}
-      <OrderReadyNotification
-        notification={lastOrderReadyNotification}
+      {/* Notificaciones de pedidos listos */}
+      <MultipleOrderReadyNotifications
+        notifications={notifications}
         onClose={clearNotification}
       />
     </div>

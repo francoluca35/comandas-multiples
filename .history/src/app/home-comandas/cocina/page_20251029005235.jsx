@@ -86,7 +86,7 @@ const PedidoCard = ({ pedido, onStatusChange, tipo }) => {
 
       {/* Productos */}
       <div className="space-y-2 mb-4">
-        {pedido.productos?.map((item, index) => (
+        {pedido.productos?.slice(0, 3).map((item, index) => (
           <div
             key={index}
             className={`flex items-center justify-between rounded-lg p-2 ${
@@ -122,6 +122,17 @@ const PedidoCard = ({ pedido, onStatusChange, tipo }) => {
             )}
           </div>
         ))}
+        {pedido.productos?.length > 3 && (
+          <div className={`text-xs px-3 py-2 rounded-lg text-center ${
+            isTakeaway 
+              ? "text-orange-600 bg-orange-100/50" 
+              : isDelivery
+              ? "text-purple-600 bg-purple-100/50"
+              : "text-yellow-600 bg-yellow-100/50"
+          }`}>
+            +{pedido.productos.length - 3} productos más...
+          </div>
+        )}
       </div>
 
       {/* Botón de acción */}
@@ -395,9 +406,9 @@ function CocinaContent() {
                 </div>
               </div>
 
-              {/* Contenedor principal - Layout vertical */}
-              <div className="space-y-8">
-                {/* Sección: En Preparación - Arriba */}
+              {/* Contenedor principal */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Sección: Primeros Pedidos */}
                 <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-6 border border-yellow-200 shadow-xl backdrop-blur-sm">
                   <div className="flex items-center justify-center mb-6">
                     <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-full shadow-lg mr-3">
@@ -412,9 +423,7 @@ function CocinaContent() {
                       {pedidosPrimeros.length}
                     </div>
                   </div>
-                  
-                  {/* Grid de pedidos en preparación */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="space-y-4">
                     {pedidosPrimeros.length > 0 ? (
                       pedidosPrimeros.map((pedido) => (
                         <PedidoCard
@@ -425,7 +434,7 @@ function CocinaContent() {
                         />
                       ))
                     ) : (
-                      <div className="col-span-full bg-white/70 rounded-xl p-8 border border-yellow-200 shadow-sm">
+                      <div className="bg-white/70 rounded-xl p-8 border border-yellow-200 shadow-sm">
                         <div className="text-center">
                           <div className="text-yellow-400 text-4xl mb-3">🍽️</div>
                           <p className="text-yellow-700 font-medium">Sin pedidos pendientes</p>
@@ -436,7 +445,7 @@ function CocinaContent() {
                   </div>
                 </div>
 
-                {/* Sección: Entregados - Abajo */}
+                {/* Sección: Pedidos Entregados */}
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200 shadow-xl backdrop-blur-sm">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
@@ -470,9 +479,7 @@ function CocinaContent() {
                       </button>
                     )}
                   </div>
-                  
-                  {/* Grid de pedidos entregados */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="space-y-4">
                     {pedidosHechos.length > 0 ? (
                       pedidosHechos.map((pedido) => (
                         <PedidoCard
@@ -483,7 +490,7 @@ function CocinaContent() {
                         />
                       ))
                     ) : (
-                      <div className="col-span-full bg-white/70 rounded-xl p-8 border border-green-200 shadow-sm">
+                      <div className="bg-white/70 rounded-xl p-8 border border-green-200 shadow-sm">
                         <div className="text-center">
                           <div className="text-green-400 text-4xl mb-3">✅</div>
                           <p className="text-green-700 font-medium">Sin pedidos entregados</p>

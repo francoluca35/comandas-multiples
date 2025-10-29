@@ -31,7 +31,7 @@ function InventarioStats({ onToggle, isExpanded, formatDinero }) {
         sinStock: inventarioStats.sinStock
       });
     }
-  }, [bebidas, materiaPrima, getInventarioStats]);
+  }, [bebidas, materiaPrima]);
 
   if (loading) {
     return (

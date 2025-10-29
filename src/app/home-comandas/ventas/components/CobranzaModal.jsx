@@ -6,6 +6,7 @@ import { useTicketGenerator } from "@/hooks/useTicketGenerator";
 import { usePaymentProcessor } from "@/hooks/usePaymentProcessor";
 import { usePaymentStatus } from "@/hooks/usePaymentStatus";
 import { useIngresos } from "@/hooks/useIngresos";
+import { useStockUpdate } from "@/hooks/useStockUpdate";
 import PaymentStatusModal from "@/components/PaymentStatusModal";
 import QRPaymentModal from "@/components/QRPaymentModal";
 import POSPaymentModal from "@/components/POSPaymentModal";
@@ -47,10 +48,29 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   // Hook para manejar ingresos
   const { crearIngreso } = useIngresos();
 
+  // Hook para actualizar stock
+  const { updateStockFromSale } = useStockUpdate();
+
+  // Función para actualizar stock cuando se complete una venta
+  const actualizarStockVenta = async () => {
+    try {
+      if (orderData?.productos && orderData.productos.length > 0) {
+        console.log("📦 Actualizando stock por venta:", orderData.productos);
+        await updateStockFromSale(orderData.productos);
+        console.log("✅ Stock actualizado exitosamente");
+      }
+    } catch (error) {
+      console.error("❌ Error actualizando stock:", error);
+      // No lanzar error para no interrumpir el flujo de pago
+    }
+  };
+
   // Efecto para mostrar el modal de estado cuando el pago se aprueba
   useEffect(() => {
     if (isApproved && currentExternalRef) {
       setShowPaymentStatus(true);
+      // Actualizar stock antes de notificar el pago completado
+      actualizarStockVenta();
       // Notificar que el pago se completó
       if (onPaymentComplete) {
         onPaymentComplete("tarjeta");
@@ -241,6 +261,9 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
         return;
       }
 
+      // Actualizar stock antes de liberar la mesa
+      await actualizarStockVenta();
+
       // Actualizar la mesa en Firestore para liberarla
       const mesaRef = doc(
         db,
@@ -262,8 +285,11 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     }
   };
 
-  const handleTicketSendComplete = (sendMethod, ticketData) => {
+  const handleTicketSendComplete = async (sendMethod, ticketData) => {
     console.log("✅ Ticket enviado exitosamente:", { sendMethod, ticketData });
+    
+    // Actualizar stock antes de notificar el pago completado
+    await actualizarStockVenta();
     
     // Notificar que el pago se completó
     if (onPaymentComplete) {
@@ -275,8 +301,12 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     onClose();
   };
 
-  const handleCloseTicketSendModal = () => {
+  const handleCloseTicketSendModal = async () => {
     setShowTicketSendModal(false);
+    
+    // Actualizar stock antes de notificar el pago completado
+    await actualizarStockVenta();
+    
     // Notificar que el pago se completó aunque no se envió el ticket
     if (onPaymentComplete) {
       onPaymentComplete("efectivo");

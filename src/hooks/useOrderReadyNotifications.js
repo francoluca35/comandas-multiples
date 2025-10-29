@@ -6,7 +6,7 @@ import { collection, onSnapshot, query, where, orderBy, limit, doc, updateDoc } 
 
 const useOrderReadyNotifications = () => {
   const { restauranteActual: restaurant } = useRestaurant();
-  const [lastOrderReadyNotification, setLastOrderReadyNotification] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [isEnabled, setIsEnabled] = useState(true);
 
   // Función para reproducir sonido 1
@@ -61,13 +61,22 @@ const useOrderReadyNotifications = () => {
     // Agregar información de productos
     message += ` - ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`;
 
-    // Mostrar notificación en la interfaz (siempre funciona)
-    setLastOrderReadyNotification({
-      id: Date.now(),
+    // Crear nueva notificación
+    const newNotification = {
+      id: Date.now() + Math.random(), // ID único
       message,
       type: "order-ready",
       timestamp: new Date(),
-      pedido
+      pedido,
+      mesa: mesa,
+      tipo: tipo,
+      cliente: cliente
+    };
+
+    // Agregar a la lista de notificaciones (máximo 5 notificaciones)
+    setNotifications(prev => {
+      const updated = [newNotification, ...prev].slice(0, 5);
+      return updated;
     });
 
     // Reproducir sonido y vibrar
@@ -76,7 +85,7 @@ const useOrderReadyNotifications = () => {
 
     // Limpiar notificación después de 1 minuto
     setTimeout(() => {
-      setLastOrderReadyNotification(null);
+      setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
     }, 60000); // 1 minuto = 60000ms
 
     console.log("🔔 Notificación de pedido listo mostrada:", message);
@@ -170,15 +179,26 @@ const useOrderReadyNotifications = () => {
   }, []);
 
   // Función para limpiar notificación manualmente
-  const clearNotification = useCallback(() => {
-    setLastOrderReadyNotification(null);
+  const clearNotification = useCallback((notificationId) => {
+    if (notificationId) {
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } else {
+      setNotifications([]);
+    }
+  }, []);
+
+  // Función para limpiar todas las notificaciones
+  const clearAllNotifications = useCallback(() => {
+    setNotifications([]);
   }, []);
 
   return {
-    lastOrderReadyNotification,
+    notifications,
+    lastOrderReadyNotification: notifications[0] || null, // Para compatibilidad
     isEnabled,
     setIsEnabled,
     clearNotification,
+    clearAllNotifications,
     showOrderReadyNotification
   };
 };
