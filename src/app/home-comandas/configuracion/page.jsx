@@ -11,7 +11,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { db } from "../../../../lib/firebase"; 
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { FaVolumeUp, FaVolumeMute, FaCog, FaBell, FaMusic, FaPlay, FaStop, FaCreditCard, FaStore } from "react-icons/fa";
+import { FaVolumeUp, FaVolumeMute, FaCog, FaBell, FaMusic, FaPlay, FaStop, FaCreditCard, FaStore, FaUsers } from "react-icons/fa";
+import UserManagement from "../../../components/UserManagement";
 
 // Componente para la configuración de sonidos
 const SoundConfiguration = () => {
@@ -498,6 +499,7 @@ function ConfiguracionContent() {
   const [activeSection, setActiveSection] = useState("mercadopago");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showUserManager, setShowUserManager] = useState(false);
 
   // Estados para Mercado Pago
   const [mercadopagoConfig, setMercadopagoConfig] = useState({
@@ -535,6 +537,12 @@ function ConfiguracionContent() {
       name: "Sonidos",
       icon: FaMusic,
       description: "Configuración de notificaciones"
+    },
+    {
+      id: "usuarios",
+      name: "Gestión de Usuarios",
+      icon: FaUsers,
+      description: "Administrar usuarios del restaurante"
     },
   ];
 
@@ -722,6 +730,11 @@ function ConfiguracionContent() {
                   />
                 )}
                 {activeSection === "sonidos" && <SoundConfiguration />}
+                {activeSection === "usuarios" && (
+                  <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200 overflow-hidden">
+                    <UserManagement />
+                  </div>
+                )}
               </div>
 
               {/* Información adicional */}

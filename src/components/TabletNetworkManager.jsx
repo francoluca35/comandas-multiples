@@ -1,12 +1,16 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../../lib/firebase'; 
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, getDoc } from 'firebase/firestore';
 import { useSafeModalRender } from './SafeModalWrapper';
 import ForceSafeModal from './ForceSafeModal';
+import { useRestaurantUsers } from '@/hooks/useRestaurantUsers';
 
 const TabletNetworkManager = ({ isOpen, onClose }) => {
   const [tablets, setTablets] = useState([]);
+  const { usuarios, obtenerUsuarios, actualizarUsuario, eliminarUsuario } = useRestaurantUsers();
+  const [cantidadUsuarios, setCantidadUsuarios] = useState(0);
   const [networkStatus, setNetworkStatus] = useState({
     isOnline: navigator.onLine,
     wifiConnected: false,
@@ -33,6 +37,8 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       loadTablets();
+      loadQuota();
+      obtenerUsuarios();
       checkNetworkStatus();
       setupRealtimeListener();
     }
@@ -79,6 +85,22 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
     });
   };
 
+  const loadQuota = async () => {
+    try {
+      const restaurantId = localStorage.getItem('restauranteId');
+      if (!restaurantId) return;
+      const restoRef = doc(db, 'restaurantes', restaurantId);
+      const snap = await getDoc(restoRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        const cant = Number(data.cantidadUsuarios || data.cantUsuarios || 0);
+        setCantidadUsuarios(isNaN(cant) ? 0 : cant);
+      }
+    } catch (e) {
+      console.error('Error cargando cuota de usuarios:', e);
+    }
+  };
+
   const checkNetworkStatus = () => {
     const isOnline = navigator.onLine;
     
@@ -118,6 +140,16 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
         createdAt: editingTablet ? undefined : new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
+      // Validar cuota de asignaciones
+      const assignedBefore = editingTablet && editingTablet.assignedTo && editingTablet.assignedTo !== '';
+      const assignNow = (tabletData.assignedTo || '').trim() !== '';
+      if (assignNow && (!editingTablet || !assignedBefore || editingTablet.assignedTo !== tabletData.assignedTo)) {
+        const assignedCount = tablets.filter(t => (t.assignedTo || '').trim() !== '').length;
+        if (cantidadUsuarios && assignedCount >= cantidadUsuarios) {
+          throw new Error(`Límite alcanzado: solo ${cantidadUsuarios} dispositivos pueden asignarse.`);
+        }
+      }
 
       if (editingTablet) {
         const tabletRef = doc(db, 'restaurantes', restaurantId, 'tablets', editingTablet.id);
@@ -252,38 +284,52 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
     <ForceSafeModal
       isOpen={isOpen}
       onClose={onClose}
-      className="w-full max-w-7xl max-h-[90vh] overflow-y-auto p-6"
+      className="w-full max-w-6xl max-h-[90vh] overflow-y-auto p-0"
     >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-2">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span className="text-gray-800 font-bold text-xl">Gestión de Tablets en Red</span>
+        {/* Card container */}
+        <div className="m-4 rounded-2xl border border-slate-600/40 bg-gradient-to-b from-slate-800 to-slate-900 shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-900/60 rounded-t-2xl">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-600/20 text-blue-300 p-2 rounded-lg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Gestión de Tablets en Red</h2>
+                <p className="text-xs text-slate-400">Administra tablets conectadas a tu red interna</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 bg-slate-800 border border-slate-600/60 rounded-full flex items-center justify-center text-slate-300 hover:bg-slate-700 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+
+          {/* Resumen de cupo */}
+          <div className="px-6 py-3 border-b border-slate-700/40 bg-slate-900/40 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="text-slate-300">Dispositivos permitidos: <span className="font-semibold text-white">{cantidadUsuarios || 0}</span></div>
+            <div className="text-slate-300">Asignados: <span className="font-semibold text-white">{tablets.filter(t => (t.assignedTo||'').trim() !== '').length}</span></div>
+            <div className="text-slate-300">Disponibles: <span className="font-semibold text-white">{Math.max(0, (cantidadUsuarios||0) - tablets.filter(t => (t.assignedTo||'').trim() !== '').length)}</span></div>
+          </div>
 
         {/* Network Status */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="m-6 p-4 rounded-xl border border-slate-600/40 bg-slate-800/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h3 className="text-lg font-semibold text-gray-800">Estado de la Red</h3>
-              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getNetworkStatusColor()}`}>
+              <h3 className="text-base font-semibold text-white">Estado de la Red</h3>
+              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getNetworkStatusColor()}`}>
                 {getNetworkStatusText()}
               </span>
             </div>
             <button
               onClick={checkNetworkStatus}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs flex items-center space-x-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -291,18 +337,18 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
               <span>Verificar Red</span>
             </button>
           </div>
-          <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${networkStatus.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span>Internet: {networkStatus.isOnline ? 'Conectado' : 'Desconectado'}</span>
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center space-x-2 text-slate-300">
+              <div className={`w-2.5 h-2.5 rounded-full ${networkStatus.isOnline ? 'bg-green-400' : 'bg-red-500'}`}></div>
+              <span>Internet: <span className="font-medium">{networkStatus.isOnline ? 'Conectado' : 'Desconectado'}</span></span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${networkStatus.wifiConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span>Wi-Fi: {networkStatus.wifiConnected ? 'Conectado' : 'Desconectado'}</span>
+            <div className="flex items-center space-x-2 text-slate-300">
+              <div className={`w-2.5 h-2.5 rounded-full ${networkStatus.wifiConnected ? 'bg-green-400' : 'bg-red-500'}`}></div>
+              <span>Wi‑Fi: <span className="font-medium">{networkStatus.wifiConnected ? 'Conectado' : 'Desconectado'}</span></span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${networkStatus.internalNetwork ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span>Red Interna: {networkStatus.internalNetwork ? 'Activa' : 'Inactiva'}</span>
+            <div className="flex items-center space-x-2 text-slate-300">
+              <div className={`w-2.5 h-2.5 rounded-full ${networkStatus.internalNetwork ? 'bg-green-400' : 'bg-red-500'}`}></div>
+              <span>Red Interna: <span className="font-medium">{networkStatus.internalNetwork ? 'Activa' : 'Inactiva'}</span></span>
             </div>
           </div>
         </div>
@@ -330,9 +376,58 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
           </div>
         )}
 
+        {/* Usuarios sin tablet asignada */}
+        <div className="px-6 pb-4">
+          <h3 className="text-sm font-semibold text-white mb-3">Usuarios sin tablet asignada</h3>
+          <div className="rounded-lg border border-slate-700/50 overflow-hidden">
+            <table className="min-w-full bg-slate-900/40">
+              <thead className="bg-slate-800/80">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-300">Usuario</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-300">Rol</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-300">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/60 text-slate-200">
+                {usuarios
+                  .filter(u => !tablets.some(t => (t.assignedTo||'').toLowerCase() === (u.usuario||'').toLowerCase()))
+                  .map(u => (
+                  <tr key={u.id} className="hover:bg-slate-800/60">
+                    <td className="px-4 py-2 text-sm">{u.usuario}</td>
+                    <td className="px-4 py-2 text-sm capitalize">{u.rol}</td>
+                    <td className="px-4 py-2 text-sm space-x-3">
+                      <button
+                        onClick={async () => {
+                          const nuevoNombre = prompt('Nuevo nombre de usuario', u.usuario);
+                          if (!nuevoNombre || nuevoNombre === u.usuario) return;
+                          await actualizarUsuario(u.id, { usuario: nuevoNombre });
+                        }}
+                        className="text-blue-400 hover:text-blue-300"
+                      >Editar</button>
+                      <button
+                        onClick={async () => {
+                          if (confirm(`¿Eliminar usuario "${u.usuario}"?`)) {
+                            await eliminarUsuario(u.id);
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-300"
+                      >Eliminar</button>
+                    </td>
+                  </tr>
+                ))}
+                {usuarios.filter(u => !tablets.some(t => (t.assignedTo||'').toLowerCase() === (u.usuario||'').toLowerCase())).length === 0 && (
+                  <tr>
+                    <td className="px-4 py-3 text-slate-400 text-sm" colSpan={3}>Todos los usuarios tienen tablet asignada.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Action Buttons */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
+        <div className="flex justify-between items-center px-6 mb-4">
+          <h2 className="text-base font-semibold text-white">
             Tablets Registradas ({tablets.length})
           </h2>
           <button
@@ -340,7 +435,7 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
               resetForm();
               setShowForm(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-colors text-sm"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -356,42 +451,42 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
             <span className="ml-3 text-gray-600">Cargando...</span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-              <thead className="bg-gray-50">
+          <div className="px-6 pb-6 overflow-x-auto">
+            <table className="min-w-full border border-slate-700/50 rounded-lg overflow-hidden bg-slate-900/40">
+              <thead className="bg-slate-800/80">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tablet</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asignado a</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Conexión</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Tablet</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">IP Address</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Ubicación</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Asignado a</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Última Conexión</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-700/60 text-slate-200">
                 {tablets.map((tablet) => (
-                  <tr key={tablet.id} className="hover:bg-gray-50">
+                  <tr key={tablet.id} className="hover:bg-slate-800/60">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="h-10 w-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{tablet.name}</div>
-                          <div className="text-sm text-gray-500">{tablet.department}</div>
+                          <div className="text-sm font-semibold text-white">{tablet.name}</div>
+                          <div className="text-xs text-slate-400">{tablet.department}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {tablet.ipAddress}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {tablet.location}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {tablet.assignedTo || 'Sin asignar'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -399,25 +494,25 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
                         {getStatusText(tablet.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                       {tablet.lastSeen ? new Date(tablet.lastSeen).toLocaleString() : 'Nunca'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
                       <button
                         onClick={() => handleEdit(tablet)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-400 hover:text-blue-300"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleStatusUpdate(tablet.id, tablet.status === 'online' ? 'offline' : 'online')}
-                        className={`${tablet.status === 'online' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                        className={`${tablet.status === 'online' ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}`}
                       >
                         {tablet.status === 'online' ? 'Desconectar' : 'Conectar'}
                       </button>
                       <button
                         onClick={() => handleDelete(tablet)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-400 hover:text-red-300"
                       >
                         Eliminar
                       </button>
@@ -430,26 +525,26 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
         )}
 
         {tablets.length === 0 && !loading && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-slate-400">
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            <p className="text-lg">No hay tablets registradas</p>
-            <p className="text-sm mt-2">Registra la primera tablet para comenzar</p>
+            <p className="text-base">No hay tablets registradas</p>
+            <p className="text-xs mt-2">Registra la primera tablet para comenzar</p>
           </div>
         )}
 
         {/* Form Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        {showForm && typeof window !== 'undefined' && createPortal(
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-bold text-white">
                   {editingTablet ? 'Editar Tablet' : 'Registrar Nueva Tablet'}
                 </h3>
                 <button
                   onClick={resetForm}
-                  className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-300"
+                  className="w-8 h-8 bg-slate-800 border border-slate-600/60 rounded-full flex items-center justify-center text-slate-300 hover:bg-slate-700 hover:text-white"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -460,62 +555,62 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Tablet *</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Nombre de la Tablet *</label>
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Ej: Tablet Mesa 1"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección IP *</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Dirección IP *</label>
                     <input
                       type="text"
                       name="ipAddress"
                       value={formData.ipAddress}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Ej: 192.168.1.100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dirección MAC</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Dirección MAC</label>
                     <input
                       type="text"
                       name="macAddress"
                       value={formData.macAddress}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Ej: AA:BB:CC:DD:EE:FF"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Ubicación</label>
                     <input
                       type="text"
                       name="location"
                       value={formData.location}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Ej: Salón Principal, Mesa 5"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Departamento</label>
                     <select
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Seleccionar departamento</option>
                       <option value="ventas">Ventas</option>
@@ -526,36 +621,36 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Asignado a</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Asignado a</label>
                     <input
                       type="text"
                       name="assignedTo"
                       value={formData.assignedTo}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Nombre del empleado"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Red Wi-Fi</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Red Wi‑Fi</label>
                     <input
                       type="text"
                       name="wifiNetwork"
                       value={formData.wifiNetwork}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Nombre de la red Wi-Fi"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Estado</label>
                     <select
                       name="status"
                       value={formData.status}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="offline">Desconectada</option>
                       <option value="online">En línea</option>
@@ -565,13 +660,13 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Notas</label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Notas adicionales sobre la tablet"
                   />
                 </div>
@@ -580,7 +675,7 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-4 py-3 font-semibold transition-colors"
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-4 py-3 font-semibold transition-colors"
                   >
                     Cancelar
                   </button>
@@ -607,7 +702,8 @@ const TabletNetworkManager = ({ isOpen, onClose }) => {
               </form>
             </div>
           </div>
-        )}
+        , document.body)}
+        </div>
     </ForceSafeModal>
   );
 };
