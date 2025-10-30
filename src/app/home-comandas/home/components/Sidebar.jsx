@@ -55,6 +55,8 @@ function Sidebar() {
       setActiveItem("inventario");
     } else if (pathname === "/home-comandas/pagos") {
       setActiveItem("pagos");
+    } else if (pathname === "/home-comandas/promociones") {
+      setActiveItem("promociones");
     } else if (pathname === "/home-comandas/reportes") {
       setActiveItem("reportes");
     } else if (pathname === "/home-comandas/cocina") {
@@ -419,6 +421,39 @@ function Sidebar() {
           </div>
         )}
 
+        {/* Promociones - Solo ADMIN */}
+        {permissions.canAccessPromociones && (
+          <div
+            className={getItemClasses("promociones")}
+            onClick={() => handleItemClick("promociones", "/home-comandas/promociones")}
+          >
+            <svg
+              className={`w-5 h-5 ${
+                activeItem === "promociones" ? "text-white" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+              />
+            </svg>
+            {isExpanded && (
+              <span
+                className={`ml-3 font-semibold ${
+                  activeItem === "promociones" ? "text-white" : "text-slate-300"
+                }`}
+              >
+                Promociones
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Reportes - Solo ADMIN */}
         {permissions.canAccessReportes && (
           <div
@@ -560,39 +595,6 @@ function Sidebar() {
                 }`}
               >
                 Configuración
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Promociones - Solo ADMIN */}
-        {permissions.canAccessPromociones && (
-          <div
-            className={getItemClasses("promociones")}
-            onClick={() => handleItemClick("promociones")}
-          >
-            <svg
-              className={`w-5 h-5 ${
-                activeItem === "promociones" ? "text-white" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
-            </svg>
-            {isExpanded && (
-              <span
-                className={`ml-3 font-semibold ${
-                  activeItem === "promociones" ? "text-white" : "text-slate-300"
-                }`}
-              >
-                Promociones
               </span>
             )}
           </div>
