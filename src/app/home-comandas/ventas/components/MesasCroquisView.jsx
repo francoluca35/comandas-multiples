@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useTables } from "../../../../hooks/useTables";
+import { useRestaurantZones } from "../../../../hooks/useRestaurantZones";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../../../../lib/firebase";
+import ZoneConfigModal from "../../../../components/ZoneConfigModal";
 
 // Función para obtener el restaurantId desde localStorage
 const getRestaurantId = () => {
@@ -18,12 +20,15 @@ const getRestaurantId = () => {
 
 function MesasCroquisView({ onMesaClick }) {
   const { tables, loading, error, fetchTables } = useTables();
+  const { zonesConfig, getCurrentConfig, fetchZonesConfig } = useRestaurantZones();
   const [locationFilter, setLocationFilter] = useState("todas");
   const [mesaSizes, setMesaSizes] = useState({});
+  const [showZoneConfig, setShowZoneConfig] = useState(false);
 
-  // Cargar mesas al montar el componente
+  // Cargar mesas y configuración al montar el componente
   useEffect(() => {
     fetchTables();
+    fetchZonesConfig();
   }, []);
 
   // Cargar tamaños de mesa
@@ -108,16 +113,20 @@ function MesasCroquisView({ onMesaClick }) {
     }
   };
 
+  // Obtener configuración actual de zonas
+  const currentConfig = zonesConfig ? getCurrentConfig() : { zones: ["adentro", "afuera"], labels: { adentro: "Adentro", afuera: "Afuera" } };
+
   // Filtrar mesas según la ubicación seleccionada
   const filteredTables = tables.filter((mesa) => {
     if (locationFilter === "todas") return true;
     return mesa.lugar === locationFilter;
   });
 
-  // Separar mesas por ubicación
-  const mesasAdentro = filteredTables.filter(mesa => mesa.lugar === "adentro");
-  const mesasAfuera = filteredTables.filter(mesa => mesa.lugar === "afuera");
-  const hasAfuera = mesasAfuera.length > 0;
+  // Separar mesas por ubicación usando la configuración actual
+  const mesasPorZona = {};
+  currentConfig.zones.forEach(zone => {
+    mesasPorZona[zone] = filteredTables.filter(mesa => mesa.lugar === zone);
+  });
 
   if (loading) {
     return (
@@ -182,7 +191,7 @@ function MesasCroquisView({ onMesaClick }) {
       {/* Botonera de ubicación y controles */}
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-4 sm:mb-6 lg:mb-8">
         {/* Filtros de ubicación */}
-        <div className="bg-[#2a2a2a] rounded-xl p-1 flex shadow-lg">
+        <div className="bg-[#2a2a2a] rounded-xl p-1 flex shadow-lg flex-wrap justify-center">
           <button
             onClick={() => setLocationFilter("todas")}
             className={`px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap ${
@@ -193,28 +202,32 @@ function MesasCroquisView({ onMesaClick }) {
           >
             Todas
           </button>
-          <button
-            onClick={() => setLocationFilter("adentro")}
-            className={`px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap ${
-              locationFilter === "adentro"
-                ? "bg-blue-600 text-white shadow-lg transform scale-105"
-                : "text-gray-300 hover:text-white hover:bg-[#3a3a3a] hover:scale-105"
-            }`}
-          >
-            Adentro
-          </button>
-          <button
-            onClick={() => setLocationFilter("afuera")}
-            className={`px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap ${
-              locationFilter === "afuera"
-                ? "bg-blue-600 text-white shadow-lg transform scale-105"
-                : "text-gray-300 hover:text-white hover:bg-[#3a3a3a] hover:scale-105"
-            }`}
-          >
-            Afuera
-          </button>
+          {currentConfig.zones.map((zone) => (
+            <button
+              key={zone}
+              onClick={() => setLocationFilter(zone)}
+              className={`px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap ${
+                locationFilter === zone
+                  ? "bg-blue-600 text-white shadow-lg transform scale-105"
+                  : "text-gray-300 hover:text-white hover:bg-[#3a3a3a] hover:scale-105"
+              }`}
+            >
+              {currentConfig.labels[zone] || zone}
+            </button>
+          ))}
         </div>
 
+        {/* Botón de configuración de zonas */}
+        <button
+          onClick={() => setShowZoneConfig(true)}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2 shadow-lg"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Configurar Zonas</span>
+        </button>
       </div>
 
       {/* Instrucciones */}
@@ -248,7 +261,7 @@ function MesasCroquisView({ onMesaClick }) {
                     {getStatusText(mesa.estado)}
                   </div>
                   <div className="text-xs opacity-75 font-semibold drop-shadow-sm mt-1">
-                    {mesa.lugar === "adentro" ? "Adentro" : "Afuera"}
+                    {currentConfig.labels[mesa.lugar] || mesa.lugar || "Sin ubicación"}
                   </div>
                   {currentSize === "familiar" && (
                     <div className="text-xs opacity-75 font-semibold drop-shadow-sm">
@@ -292,13 +305,22 @@ function MesasCroquisView({ onMesaClick }) {
             No hay mesas en la ubicación "
             {locationFilter === "todas"
               ? "todas"
-              : locationFilter === "adentro"
-              ? "adentro"
-              : "afuera"}
+              : currentConfig.labels[locationFilter] || locationFilter}
             "
           </p>
         </div>
       )}
+
+      {/* Modal de Configuración de Zonas */}
+      <ZoneConfigModal
+        isOpen={showZoneConfig}
+        onClose={() => setShowZoneConfig(false)}
+        onConfigChange={async (newConfig) => {
+          await fetchZonesConfig();
+          await fetchTables(); // Recargar mesas después de la migración
+          setShowZoneConfig(false);
+        }}
+      />
     </div>
   );
 }
