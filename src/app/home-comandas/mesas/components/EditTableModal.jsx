@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useRestaurantZones } from "../../../../hooks/useRestaurantZones";
 
 function EditTableModal({
   isOpen,
@@ -8,7 +9,18 @@ function EditTableModal({
   setFormData,
   onSubmit,
 }) {
+  const { zonesConfig, getCurrentConfig, fetchZonesConfig } = useRestaurantZones();
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchZonesConfig();
+    }
+  }, [isOpen]);
+
   if (!isOpen || !table) return null;
+
+  // Obtener configuración actual de zonas
+  const currentConfig = zonesConfig ? getCurrentConfig() : { zones: ["adentro", "afuera"], labels: { adentro: "Adentro", afuera: "Afuera" } };
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
@@ -61,59 +73,39 @@ function EditTableModal({
               <label className="block text-sm font-semibold text-slate-300 mb-3">
                 Ubicación
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, lugar: "adentro" })}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-200 ${
-                    formData.lugar === "adentro"
-                      ? "bg-blue-600 border-blue-500 text-white shadow-lg"
-                      : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50 hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    <span className="font-medium">Adentro</span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, lugar: "afuera" })}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-200 ${
-                    formData.lugar === "afuera"
-                      ? "bg-blue-600 border-blue-500 text-white shadow-lg"
-                      : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50 hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span className="font-medium">Afuera</span>
-                  </div>
-                </button>
+              <div className={`grid gap-3 ${currentConfig.zones.length === 2 ? 'grid-cols-2' : currentConfig.zones.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {currentConfig.zones.map((zone) => (
+                  <button
+                    key={zone}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, lugar: zone })}
+                    className={`px-4 py-3 rounded-xl border transition-all duration-200 ${
+                      formData.lugar === zone
+                        ? "bg-blue-600 border-blue-500 text-white shadow-lg"
+                        : "bg-slate-700/50 border-slate-600/50 text-slate-300 hover:bg-slate-600/50 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d={zone.includes("afuera") 
+                            ? "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            : "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          }
+                        />
+                      </svg>
+                      <span className="font-medium text-sm">{currentConfig.labels[zone] || zone}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
               {!formData.lugar && (
                 <p className="text-sm text-red-400 mt-2">

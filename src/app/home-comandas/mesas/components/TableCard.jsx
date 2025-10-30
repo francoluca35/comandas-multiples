@@ -1,6 +1,12 @@
 import React from "react";
+import { useRestaurantZones } from "../../../../hooks/useRestaurantZones";
 
 function TableCard({ table, onEdit, onDelete, onLiberarMesa }) {
+  const { zonesConfig, getCurrentConfig } = useRestaurantZones();
+
+  // Obtener configuración actual de zonas
+  const currentConfig = zonesConfig ? getCurrentConfig() : { zones: ["adentro", "afuera"], labels: { adentro: "Adentro", afuera: "Afuera" } };
+
   const getStatusColor = (estado) => {
     switch (estado) {
       case "libre":
@@ -47,25 +53,24 @@ function TableCard({ table, onEdit, onDelete, onLiberarMesa }) {
   };
 
   const getLocationColor = (lugar) => {
-    switch (lugar) {
-      case "adentro":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "afuera":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+    // Colores diferenciados por zona
+    if (lugar === "afuera") {
+      return "bg-orange-500/20 text-orange-400 border-orange-500/30";
     }
+    if (lugar?.includes("planta_alta")) {
+      return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+    }
+    if (lugar?.includes("planta_baja")) {
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    }
+    if (lugar === "adentro" || lugar?.includes("adentro")) {
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    }
+    return "bg-slate-500/20 text-slate-400 border-slate-500/30";
   };
 
   const getLocationText = (lugar) => {
-    switch (lugar) {
-      case "adentro":
-        return "Adentro";
-      case "afuera":
-        return "Afuera";
-      default:
-        return "Sin ubicación";
-    }
+    return currentConfig.labels[lugar] || lugar || "Sin ubicación";
   };
 
   return (

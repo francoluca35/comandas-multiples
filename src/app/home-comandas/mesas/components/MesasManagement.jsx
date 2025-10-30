@@ -7,6 +7,7 @@ import AddTableModal from "./AddTableModal";
 import EditTableModal from "./EditTableModal";
 import DeleteTableModal from "./DeleteTableModal";
 import EmptyState from "./EmptyState";
+import ZoneConfigModal from "../../../../components/ZoneConfigModal";
 
 function MesasManagement() {
   const {
@@ -36,6 +37,7 @@ function MesasManagement() {
   const [showReorganizeModal, setShowReorganizeModal] = useState(false);
   const [reorganizeOptions, setReorganizeOptions] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
+  const [showZoneConfig, setShowZoneConfig] = useState(false);
   const [formData, setFormData] = useState({
     numero: "",
     lugar: "",
@@ -222,6 +224,7 @@ function MesasManagement() {
           <MesasHeader
             onAddTable={() => setShowAddModal(true)}
             onVerifyStatus={handleVerifyStatus}
+            onConfigZones={() => setShowZoneConfig(true)}
           />
         </div>
       </div>
@@ -413,6 +416,16 @@ function MesasManagement() {
           </div>
         </div>
       )}
+
+      {/* Modal de Configuración de Zonas */}
+      <ZoneConfigModal
+        isOpen={showZoneConfig}
+        onClose={() => setShowZoneConfig(false)}
+        onConfigChange={async (newConfig) => {
+          setShowZoneConfig(false);
+          await fetchTables(); // Recargar mesas después de la migración
+        }}
+      />
     </div>
   );
 }

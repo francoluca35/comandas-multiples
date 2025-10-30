@@ -1,8 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRestaurantZones } from "../../../../hooks/useRestaurantZones";
 import TableCard from "./TableCard";
 
 function MesasGrid({ tables, onEditTable, onDeleteTable, onLiberarMesa }) {
-  const [locationFilter, setLocationFilter] = useState("todas"); // "todas", "afuera", "adentro"
+  const { zonesConfig, getCurrentConfig, fetchZonesConfig } = useRestaurantZones();
+  const [locationFilter, setLocationFilter] = useState("todas");
+
+  useEffect(() => {
+    fetchZonesConfig();
+  }, []);
+
+  // Obtener configuración actual de zonas
+  const currentConfig = zonesConfig ? getCurrentConfig() : { zones: ["adentro", "afuera"], labels: { adentro: "Adentro", afuera: "Afuera" } };
 
   // Filtrar mesas según la ubicación seleccionada
   const filteredTables = tables.filter((table) => {
@@ -14,7 +23,7 @@ function MesasGrid({ tables, onEditTable, onDeleteTable, onLiberarMesa }) {
     <div>
       {/* Botonera de ubicación */}
       <div className="flex justify-center mb-8">
-        <div className="bg-slate-700/50 rounded-lg p-1 flex backdrop-blur-sm">
+        <div className="bg-slate-700/50 rounded-lg p-1 flex backdrop-blur-sm flex-wrap justify-center">
           <button
             onClick={() => setLocationFilter("todas")}
             className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -25,26 +34,19 @@ function MesasGrid({ tables, onEditTable, onDeleteTable, onLiberarMesa }) {
           >
             Todas
           </button>
-          <button
-            onClick={() => setLocationFilter("adentro")}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-              locationFilter === "adentro"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "text-slate-300 hover:text-white hover:bg-slate-600/50"
-            }`}
-          >
-            Adentro
-          </button>
-          <button
-            onClick={() => setLocationFilter("afuera")}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-              locationFilter === "afuera"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "text-slate-300 hover:text-white hover:bg-slate-600/50"
-            }`}
-          >
-            Afuera
-          </button>
+          {currentConfig.zones.map((zone) => (
+            <button
+              key={zone}
+              onClick={() => setLocationFilter(zone)}
+              className={`px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                locationFilter === zone
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "text-slate-300 hover:text-white hover:bg-slate-600/50"
+              }`}
+            >
+              {currentConfig.labels[zone] || zone}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -83,9 +85,7 @@ function MesasGrid({ tables, onEditTable, onDeleteTable, onLiberarMesa }) {
             No hay mesas en la ubicación "
             {locationFilter === "todas"
               ? "todas"
-              : locationFilter === "adentro"
-              ? "adentro"
-              : "afuera"}
+              : currentConfig.labels[locationFilter] || locationFilter}
             "
           </p>
         </div>
