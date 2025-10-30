@@ -109,6 +109,7 @@ function NuevoAgregarPedido({ mesa, onBack, onPedidoAgregado, onMesaActualizada 
       unidades: productQuantity,
       precio: selectedProduct.precio,
       total: selectedProduct.precio * productQuantity,
+      descripcion: selectedProduct.descripcion || selectedProduct.descripción || "",
     };
 
     setNewOrderItems((prev) => [...prev, newItem]);
@@ -181,6 +182,7 @@ function NuevoAgregarPedido({ mesa, onBack, onPedidoAgregado, onMesaActualizada 
           precio: item.precio,
           total: item.total,
           notas: item.notas || "",
+          descripcion: item.descripcion || "",
         })),
         total: newOrderTotal,
         cliente: mesa.cliente || "Sin nombre",

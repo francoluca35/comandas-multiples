@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useProducts } from "../../../../hooks/useProducts";
+import { usePromociones } from "../../../../hooks/usePromociones";
 import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "../../../../../lib/firebase";
 import ClienteModal from "./ClienteModal";
@@ -29,6 +30,8 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
     fetchAllSubCategories,
   } = useProducts();
 
+  const { promociones, fetchPromociones } = usePromociones();
+
   const [showClientModal, setShowClientModal] = useState(false);
   const [selectedMainCategory, setSelectedMainCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
@@ -37,6 +40,8 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
   const [orderItems, setOrderItems] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
   const [productQuantity, setProductQuantity] = useState(1);
+  const [productNota, setProductNota] = useState("");
+  const [showNotaModal, setShowNotaModal] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [clientData, setClientData] = useState({
     nombre: "",
@@ -50,6 +55,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
     fetchMainCategories();
     fetchAllProducts();
     fetchAllSubCategories().then(setAllSubCategories);
+    fetchPromociones();
   }, []);
 
   // Mostrar modal de cliente si es una mesa libre y no se han guardado los datos
@@ -97,6 +103,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
     setProductQuantity(1);
+    setProductNota("");
   };
 
   const handleAddToOrder = () => {
@@ -108,6 +115,8 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
       unidades: productQuantity,
       precio: selectedProduct.precio,
       total: selectedProduct.precio * productQuantity,
+      notas: productNota.trim() || "",
+      descripcion: selectedProduct.descripcion || selectedProduct.descripción || "",
     };
 
     console.log('🛒 Agregando item al pedido:', newItem);
@@ -129,6 +138,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
     
     setSelectedProduct(null);
     setProductQuantity(1);
+    setProductNota("");
   };
 
   const handleQuantityChange = (newQuantity) => {
@@ -205,6 +215,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
             precio: item.precio,
             total: item.total,
             notas: item.notas || "",
+            descripcion: item.descripcion || "",
           })),
           total: orderTotal,
           cliente: clientData.nombre || "Sin nombre",
@@ -301,6 +312,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
             precio: item.precio,
             total: item.total,
             notas: item.notas || "",
+            descripcion: item.descripcion || "",
           })),
           total: orderTotal,
           cliente: clientData.name || "Sin nombre",
@@ -369,20 +381,28 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
   };
 
   // Filtrar productos por categoría principal y subcategoría seleccionadas
-  const filteredProducts = products.filter((product) => {
-    if (
-      selectedMainCategory &&
-      product.mainCategoryId !== selectedMainCategory
-    ) {
-      return false;
-    }
+  const filteredProducts = selectedMainCategory === "promociones" 
+    ? promociones.filter(p => p.activo !== false).map(p => ({
+        ...p,
+        nombre: p.nombre || p.name,
+        precio: typeof p.precio === 'string' ? parseFloat(p.precio) || 0 : (p.precio || 0),
+        mainCategoryId: "promociones",
+        subCategoryId: "promociones",
+      }))
+    : products.filter((product) => {
+        if (
+          selectedMainCategory &&
+          product.mainCategoryId !== selectedMainCategory
+        ) {
+          return false;
+        }
 
-    if (!selectedSubCategory) {
-      return true;
-    }
+        if (!selectedSubCategory) {
+          return true;
+        }
 
-    return product.subCategoryId === selectedSubCategory;
-  });
+        return product.subCategoryId === selectedSubCategory;
+      });
 
   // Filtrar subcategorías por categoría principal seleccionada
   const filteredSubCategories = (() => {
@@ -478,39 +498,55 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                 {category.name}
               </button>
             ))}
+            {/* Categoría Promociones */}
+            <button
+              onClick={() => {
+                setSelectedMainCategory("promociones");
+                setSelectedSubCategory("");
+              }}
+              className={`px-2 py-1 sm:px-3 sm:py-2 rounded-lg flex-shrink-0 transition-all duration-200 font-medium shadow-md text-xs ${
+                selectedMainCategory === "promociones"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25"
+                  : "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700"
+              }`}
+            >
+              🎁 Promociones
+            </button>
           </div>
 
           {/* Subcategorías */}
-          <div className="flex space-x-1 overflow-x-auto">
-            <button
-              onClick={() => setSelectedSubCategory("")}
-              className={`px-2 py-1 rounded-lg flex-shrink-0 transition-all duration-200 text-xs font-medium shadow-md ${
-                selectedSubCategory === ""
-                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
-              }`}
-            >
-              {selectedMainCategory === "comida"
-                ? "🍽️ Todas"
-                : selectedMainCategory === "bebidas"
-                ? "🥤 Todas"
-                : "🍽️ Todos"}
-            </button>
-
-            {filteredSubCategories.map((subCategory) => (
+          {selectedMainCategory !== "promociones" && (
+            <div className="flex space-x-1 overflow-x-auto">
               <button
-                key={`${subCategory.mainCategoryId}-${subCategory.id}`}
-                onClick={() => setSelectedSubCategory(subCategory.id)}
+                onClick={() => setSelectedSubCategory("")}
                 className={`px-2 py-1 rounded-lg flex-shrink-0 transition-all duration-200 text-xs font-medium shadow-md ${
-                  selectedSubCategory === subCategory.id
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/25"
+                  selectedSubCategory === ""
+                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25"
                     : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
                 }`}
               >
-                {subCategory.name}
+                {selectedMainCategory === "comida"
+                  ? "🍽️ Todas"
+                  : selectedMainCategory === "bebidas"
+                  ? "🥤 Todas"
+                  : "🍽️ Todos"}
               </button>
-            ))}
-          </div>
+
+              {filteredSubCategories.map((subCategory) => (
+                <button
+                  key={`${subCategory.mainCategoryId}-${subCategory.id}`}
+                  onClick={() => setSelectedSubCategory(subCategory.id)}
+                  className={`px-2 py-1 rounded-lg flex-shrink-0 transition-all duration-200 text-xs font-medium shadow-md ${
+                    selectedSubCategory === subCategory.id
+                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/25"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
+                  }`}
+                >
+                  {subCategory.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -566,22 +602,31 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                   </div>
                 </div>
 
-                {/* Botones de Acción */}
-                <div className="flex space-x-2">
-                  <button className="flex-1 bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-2 py-1 sm:px-3 sm:py-2 flex items-center justify-center space-x-1 transition-all duration-200 shadow-lg text-xs">
+                {/* Descripción de la Promoción */}
+                {selectedProduct.descripcion && (
+                  <div className="mb-3 sm:mb-4 p-3 bg-slate-600/50 rounded-lg border border-slate-500/50">
+                    <div className="text-xs text-slate-300 mb-1 font-semibold">Descripción:</div>
+                    <div className="text-sm text-white">{selectedProduct.descripcion}</div>
+                  </div>
+                )}
+
+                {/* Botón de Nota */}
+                <div className="mb-3 sm:mb-4">
+                  <button 
+                    onClick={() => setShowNotaModal(true)}
+                    className="w-full bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-2 py-1 sm:px-3 sm:py-2 flex items-center justify-center space-x-1 transition-all duration-200 shadow-lg text-xs"
+                  >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span>Nota</span>
+                    <span>Nota {productNota && productNota.trim() !== "" ? "✓" : ""}</span>
                   </button>
-                  
-                  <button className="flex-1 bg-slate-600 hover:bg-slate-500 text-white rounded-lg px-2 py-1 sm:px-3 sm:py-2 flex items-center justify-center space-x-1 transition-all duration-200 shadow-lg text-xs">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Foto</span>
-                  </button>
+                  {productNota && productNota.trim() !== "" && (
+                    <div className="mt-2 text-xs text-slate-300 bg-slate-700/50 rounded p-2">
+                      <div className="font-semibold mb-1">Nota actual:</div>
+                      <div>{productNota}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -646,7 +691,7 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                   <div className={`text-sm sm:text-base font-bold ${
                     selectedProduct?.id === product.id ? "text-orange-100" : "text-emerald-400"
                   }`}>
-                    $ {product.precio.toLocaleString()}
+                    $ {(typeof product.precio === 'number' ? product.precio : parseFloat(product.precio) || 0).toLocaleString()}
                   </div>
                   
                   {/* Descuento */}
@@ -720,14 +765,22 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
                        <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center">
                          <span className="text-white text-xs font-bold">{index + 1}</span>
                        </div>
-                       <div className="flex-1 min-w-0">
-                         <div className="text-white font-medium text-sm truncate">
-                           {item.producto}
-                         </div>
-                         <div className="text-slate-400 text-xs">
-                           {item.unidades} x ${item.precio.toLocaleString()}
-                         </div>
-                       </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium text-sm truncate">
+                            {item.producto}
+                          </div>
+                          <div className="text-slate-400 text-xs">
+                            {item.unidades} x ${item.precio.toLocaleString()}
+                          </div>
+                          {item.notas && item.notas.trim() !== "" && (
+                            <div className="text-orange-400 text-xs mt-1 flex items-center space-x-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <span className="truncate">{item.notas}</span>
+                            </div>
+                          )}
+                        </div>
                      </div>
                      <div className="flex items-center space-x-2">
                        <div className="text-right">
@@ -1031,6 +1084,64 @@ function PedidoView({ mesa, onBack, onMesaOcupada }) {
         onSave={handleClientSave}
         mesa={mesa}
       />
+
+      {/* Modal de Nota */}
+      {showNotaModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md">
+            <div className="p-3 sm:p-4 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-bold text-white">
+                  Nota para {selectedProduct?.nombre || "producto"}
+                </h2>
+                <button
+                  onClick={() => setShowNotaModal(false)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-white font-medium mb-1 sm:mb-2 text-sm">
+                  Comentario para cocina (ej: sin cebolla, sin tomate, etc.)
+                </label>
+                <textarea
+                  value={productNota}
+                  onChange={(e) => setProductNota(e.target.value)}
+                  rows={4}
+                  className="w-full bg-slate-700 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-sm resize-none"
+                  placeholder="Ej: Sin cebolla, sin tomate, bien cocido..."
+                />
+              </div>
+
+              <div className="flex space-x-2 sm:space-x-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductNota("");
+                    setShowNotaModal(false);
+                  }}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 text-sm"
+                >
+                  Limpiar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotaModal(false)}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
