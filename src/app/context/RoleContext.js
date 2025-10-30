@@ -33,6 +33,7 @@ export const RoleProvider = ({ children }) => {
           canAccessPromociones: true,
           canAccessCocina: true,
           canAccessGestion: true,
+          canAccessConfiguracion: true,
           // Permisos administrativos
           canManageUsers: true,
           canManageRestaurant: true,
@@ -52,6 +53,7 @@ export const RoleProvider = ({ children }) => {
           canAccessReportes: false,
           canAccessPromociones: false,
           canAccessCocina: false,
+          canAccessConfiguracion: false,
           // Sin permisos administrativos
           canManageUsers: false,
           canManageRestaurant: false,
@@ -71,6 +73,7 @@ export const RoleProvider = ({ children }) => {
           canAccessReportes: false,
           canAccessPromociones: false,
           canAccessCocina: false,
+          canAccessConfiguracion: false,
           // Sin permisos administrativos
           canManageUsers: false,
           canManageRestaurant: false,
@@ -90,6 +93,7 @@ export const RoleProvider = ({ children }) => {
           canAccessReportes: false,
           canAccessPromociones: false,
           canAccessCocina: true,
+          canAccessConfiguracion: false,
           // Sin permisos administrativos
           canManageUsers: false,
           canManageRestaurant: false,
@@ -109,6 +113,7 @@ export const RoleProvider = ({ children }) => {
           canAccessReportes: false,
           canAccessPromociones: false,
           canAccessCocina: false,
+          canAccessConfiguracion: false,
           canManageUsers: false,
           canManageRestaurant: false,
           canViewAllData: false,

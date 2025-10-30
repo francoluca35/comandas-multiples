@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useEffect, createContext, useContext } from "react";
-import { db } from "../../../../../lib/firebase"; 
-import { doc, updateDoc } from "firebase/firestore";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserProfile } from "../../../../hooks/useUserProfile";
@@ -73,53 +71,11 @@ function Sidebar() {
     }
   };
 
-  // Marcar online al montar y en eventos de cierre de pestaña
-  useEffect(() => {
-    const restauranteId = typeof window !== 'undefined' ? localStorage.getItem('restauranteId') : null;
-    const userId = typeof window !== 'undefined' ? localStorage.getItem('usuario') : null;
-    const markOnline = async (online) => {
-      try {
-        if (restauranteId && userId) {
-          await updateDoc(doc(db, `restaurantes/${restauranteId}/users`, userId), {
-            online,
-            ultimaActividad: new Date().toISOString(),
-          });
-        }
-      } catch (e) {
-        console.log('Error actualizando presencia:', e);
-      }
-    };
-
-    // Al entrar a la app marcar online
-    markOnline(true);
-
-    const handleBeforeUnload = () => {
-      navigator.sendBeacon && restauranteId && userId && navigator.sendBeacon(`/api/presencia`, JSON.stringify({ restauranteId, userId, online: false }));
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      markOnline(false);
-    };
-  }, []);
-
   const handleLogoClick = async () => {
     if (isExpanded) {
       // Si el sidebar está abierto, cerrar turno y cerrar sesión
       try {
         await cerrarTurno();
-        try {
-          const restauranteId = localStorage.getItem("restauranteId");
-          const userId = localStorage.getItem("usuario");
-          if (restauranteId && userId) {
-            await updateDoc(
-              doc(db, `restaurantes/${restauranteId}/users`, userId),
-              { online: false, ultimaActividad: new Date().toISOString() }
-            );
-          }
-        } catch (e) {
-          console.log("Error actualizando estado online (logo)", e);
-        }
       } catch (error) {
         console.log("Error al cerrar turno:", error);
       }
@@ -141,18 +97,6 @@ function Sidebar() {
     // Cerrar turno antes de cerrar sesión
     try {
       await cerrarTurno();
-      try {
-        const restauranteId = localStorage.getItem("restauranteId");
-        const userId = localStorage.getItem("usuario");
-        if (restauranteId && userId) {
-          await updateDoc(
-            doc(db, `restaurantes/${restauranteId}/users`, userId),
-            { online: false, ultimaActividad: new Date().toISOString() }
-          );
-        }
-      } catch (e) {
-        console.log("Error actualizando estado online (logout)", e);
-      }
     } catch (error) {
       console.log("Error al cerrar turno:", error);
     }
