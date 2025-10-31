@@ -8,7 +8,7 @@ module.exports = {
         cursive: ['var(--font-great-vibes)', 'cursive'],
       },
       colors: {
-        quickSolutionBlue: '#f1f1f1',
+        quickSolutionBlue: '#000000',
       },
     },
   },

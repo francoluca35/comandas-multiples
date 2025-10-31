@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 
@@ -7,6 +7,7 @@ function Register() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [nombreRestaurante, setNombreRestaurante] = useState("Restaurante");
 
   const [formData, setFormData] = useState({
     nombreCompleto: "",
@@ -80,15 +81,25 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0c1246] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,0,0,0.7)_0%,_transparent_60%)]" />
-      <div className="bg-[#111827] p-6 rounded-lg shadow-lg w-full max-w-md text-white relative">
+    <div 
+      className="min-h-screen flex justify-center items-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/Assets/fondo-prelogin.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat"
+      }}
+    >
+      {/* Overlay oscuro para mejorar legibilidad */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+      
+      <div className="relative z-10 bg-violet-950/50 bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl w-full max-w-md text-white">
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <img
             src="/Assets/logo-d.png"
             alt="Logo"
-            className="w-24 h-24 rounded-full object-cover border-4 border-white"
+            className="w-24 h-24 rounded-full object-cover "
           />
         </div>
 

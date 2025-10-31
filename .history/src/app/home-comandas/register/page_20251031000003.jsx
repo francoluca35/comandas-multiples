@@ -96,7 +96,7 @@ function Register() {
         {/* Logo QuickSolution */}
         <div className="text-center mb-6">
           <h1 className="text-5xl text-quickSolutionBlue font-cursive">
-            QuickSolutión
+            QuickSolution
           </h1>
         </div>
 
@@ -166,7 +166,7 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full bg-[#4e968d] hover:bg-[#1676a3] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
+            className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
           >
             Registrarse
           </button>

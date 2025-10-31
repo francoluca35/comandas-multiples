@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 
@@ -7,6 +7,7 @@ function Register() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [nombreRestaurante, setNombreRestaurante] = useState("Restaurante");
 
   const [formData, setFormData] = useState({
     nombreCompleto: "",
@@ -16,6 +17,17 @@ function Register() {
     rol: "Mesero",
     foto: null,
   });
+
+  useEffect(() => {
+    const cargarNombreRestaurante = () => {
+      const nombreResto = localStorage.getItem("nombreResto");
+      if (nombreResto) {
+        setNombreRestaurante(nombreResto);
+      }
+    };
+
+    cargarNombreRestaurante();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -93,11 +105,16 @@ function Register() {
       <div className="absolute inset-0 bg-black bg-opacity-30"></div>
       
       <div className="relative z-10 bg-violet-950/50 bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl w-full max-w-md text-white">
-        {/* Logo QuickSolution */}
+        {/* Nombre del restaurante */}
         <div className="text-center mb-6">
-          <h1 className="text-5xl text-quickSolutionBlue font-cursive">
-            QuickSolutión
-          </h1>
+          <div className="flex items-baseline justify-center gap-2">
+            <h1 className="text-3xl font-bold text-white uppercase">
+              {nombreRestaurante}
+            </h1>
+            <span className="text-sm italic text-white uppercase -translate-y-1">
+              by QuickSolution
+            </span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -108,7 +125,7 @@ function Register() {
             value={formData.nombreCompleto}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 rounded bg-[#291f37] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
+            className="w-full px-4 py-2 rounded bg-[#1f2937] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
           />
 
           <input
@@ -128,7 +145,7 @@ function Register() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 rounded bg-[#291f37] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
+            className="w-full px-4 py-2 rounded bg-[#1f2937] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
           />
 
           <input
@@ -138,14 +155,14 @@ function Register() {
             value={formData.password}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 rounded bg-[#291f37] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
+            className="w-full px-4 py-2 rounded bg-[#1f2937] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80]"
           />
 
           <select
             name="rol"
             value={formData.rol}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded bg-[#291f37] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80] text-white"
+            className="w-full px-4 py-2 rounded bg-[#1f2937] border border-[#374151] focus:outline-none focus:ring-2 focus:ring-[#4ade80] text-white"
           >
             <option>Mesero</option>
             <option>Repartidor</option>
@@ -166,7 +183,7 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full bg-[#4e968d] hover:bg-[#1676a3] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
+            className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
           >
             Registrarse
           </button>
