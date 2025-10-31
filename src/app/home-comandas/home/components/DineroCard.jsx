@@ -5,6 +5,7 @@ import { useDineroActual } from "@/hooks/useDineroActual";
 import { useAlivios } from "@/hooks/useAlivios";
 import { useInversionTotal } from "@/hooks/useInversionTotal";
 import { useSueldos } from "@/hooks/useSueldos";
+import { usePagosOptimizado } from "@/hooks/usePagosOptimizado";
 
 function DineroCard() {
   const { getTotalIngresos, getIngresos, ingresos } = useIngresos();
@@ -13,6 +14,7 @@ function DineroCard() {
   const { getTotalAlivios, alivios } = useAlivios();
   const { getInversionTotal, inversionTotal } = useInversionTotal();
   const { getTotalSueldos, sueldos } = useSueldos();
+  const { getEgresosEfectivo, getEgresosVirtual } = usePagosOptimizado();
 
   // Calcular resumen de ingresos y egresos usando useMemo
   const resumen = useMemo(() => {
@@ -22,7 +24,7 @@ function DineroCard() {
       const efectivoTotal = getEfectivoTotal() || 0;
       const virtualTotal = getVirtualTotal() || 0;
 
-      // Obtener egresos totales
+      // Obtener egresos totales (estos son valores, no funciones)
       const totalAlivios = getTotalAlivios || 0;
       const totalInversion = getInversionTotal || 0;
       const totalSueldos = getTotalSueldos || 0;
@@ -37,6 +39,9 @@ function DineroCard() {
       // Calcular ingresos por tipo según la forma de ingreso registrada
       todosLosIngresos.forEach((ingreso) => {
         const monto = parseFloat(ingreso.monto) || 0;
+        
+        // Normalizar formaIngreso para comparación
+        const formaIngreso = (ingreso.formaIngreso || "").toLowerCase();
 
         if (
           ingreso.formaIngreso === "Efectivo" ||
@@ -44,7 +49,10 @@ function DineroCard() {
         ) {
           ingresoEfectivo += monto;
         } else if (
-          ingreso.formaIngreso === "MercadoPago" ||
+          formaIngreso === "mercadopago" ||
+          formaIngreso === "mercado pago" ||
+          formaIngreso === "tarjeta" ||
+          formaIngreso === "transferencia" ||
           ingreso.opcionPago === "cuenta_restaurante"
         ) {
           ingresoVirtual += monto;
@@ -52,8 +60,14 @@ function DineroCard() {
       });
 
       // Calcular egresos por tipo
-      const egresoEfectivo = totalAlivios; // Alivios son principalmente en efectivo
-      const egresoVirtual = totalInversion + totalSueldos; // Compras y sueldos son virtuales
+      // Los egresos de la colección Egresos (desde usePagosOptimizado)
+      const egresosEfectivoRegistrados = getEgresosEfectivo() || 0;
+      const egresosVirtualRegistrados = getEgresosVirtual() || 0;
+      
+      // Sumar alivios (principalmente en efectivo)
+      const egresoEfectivo = totalAlivios + egresosEfectivoRegistrados;
+      // Sumar inversión, sueldos y egresos virtuales registrados
+      const egresoVirtual = totalInversion + totalSueldos + egresosVirtualRegistrados;
 
       const resultado = {
         ingresoEfectivo,
@@ -88,6 +102,8 @@ function DineroCard() {
     inversionTotal?.inversionTotal,
     inversionTotal?.productos?.length,
     sueldos?.length,
+    getEgresosEfectivo,
+    getEgresosVirtual,
   ]);
 
   const handleNavigation = (route) => {

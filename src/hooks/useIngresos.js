@@ -97,6 +97,41 @@ export const useIngresos = () => {
 
       if (data.success) {
         console.log("✅ Ingreso creado:", data.data);
+        
+        // Incrementar contador de ventas si es una venta de takeaway o delivery
+        if (tipoIngreso === "Venta Takeaway" || tipoIngreso === "Venta Delivery") {
+          try {
+            const { db } = await import("../../lib/firebase");
+            const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import("firebase/firestore");
+            
+            const tipoVenta = tipoIngreso === "Venta Takeaway" ? "takeaway" : "delivery";
+            const mesActual = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            const contadoresRef = doc(db, "restaurantes", restauranteId, "contadoresVentas", mesActual);
+            const contadoresSnap = await getDoc(contadoresRef);
+            
+            if (contadoresSnap.exists()) {
+              const data = contadoresSnap.data();
+              const nuevoValor = (data[tipoVenta] || 0) + 1;
+              await updateDoc(contadoresRef, {
+                [tipoVenta]: nuevoValor,
+                updatedAt: serverTimestamp(),
+              });
+            } else {
+              await setDoc(contadoresRef, {
+                salon: 0,
+                takeaway: tipoVenta === "takeaway" ? 1 : 0,
+                delivery: tipoVenta === "delivery" ? 1 : 0,
+                mes: mesActual,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              });
+            }
+          } catch (err) {
+            console.error("Error incrementando contador de ventas:", err);
+            // No lanzar error para no interrumpir el flujo principal
+          }
+        }
+        
         // Recargar los ingresos después de crear uno nuevo
         await fetchIngresos();
         return data.data;

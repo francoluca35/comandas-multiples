@@ -3,9 +3,11 @@ import React, { useState, useEffect } from "react";
 import { useDispositivos } from "@/hooks/useDispositivos";
 import { useAuth } from "@/app/context/AuthContext";
 import MensajeGlobalModal from "./MensajeGlobalModal";
+import VerUsuariosModal from "./VerUsuariosModal";
 
 function DispositivosCard() {
   const [showModal, setShowModal] = useState(false);
+  const [showUsuariosModal, setShowUsuariosModal] = useState(false);
   const [estadisticas, setEstadisticas] = useState({
     dispositivosConectados: 0,
     usuariosActivos: 0,
@@ -194,31 +196,55 @@ function DispositivosCard() {
           </div>
         )}
 
-        {/* Botón de mensaje global */}
-        <button
-          onClick={handleMensajeGlobal}
-          className={`w-full rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center transition-all duration-200 ${
-            esAdmin
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-gray-600 text-gray-400 cursor-not-allowed"
-          }`}
-          disabled={!esAdmin}
-        >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {/* Botones de acción */}
+        <div className="space-y-2">
+          {/* Botón de mensaje global */}
+          <button
+            onClick={handleMensajeGlobal}
+            className={`w-full rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center transition-all duration-200 ${
+              esAdmin
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-gray-600 text-gray-400 cursor-not-allowed"
+            }`}
+            disabled={!esAdmin}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          {esAdmin ? "Mensaje para todos" : "Solo para ADMIN"}
-        </button>
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            {esAdmin ? "Mensaje para todos" : "Solo para ADMIN"}
+          </button>
+
+          {/* Botón de ver usuarios */}
+          <button
+            onClick={() => setShowUsuariosModal(true)}
+            className="w-full rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-200"
+          >
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            Ver Usuarios
+          </button>
+        </div>
 
         {/* Información adicional */}
         <div className="mt-3 text-xs text-gray-400 text-center">
@@ -234,6 +260,12 @@ function DispositivosCard() {
       <MensajeGlobalModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
+      />
+
+      {/* Modal de ver usuarios */}
+      <VerUsuariosModal
+        isOpen={showUsuariosModal}
+        onClose={() => setShowUsuariosModal(false)}
       />
     </>
   );
