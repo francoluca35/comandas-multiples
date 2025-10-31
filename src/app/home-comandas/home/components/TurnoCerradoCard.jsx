@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useTurno } from "../../../context/TurnoContext";
+import { useHistorialEmpleados } from "../../../../hooks/useHistorialEmpleados";
+import { useRole } from "../../../context/RoleContext";
 
 function TurnoCard() {
   const {
@@ -11,6 +13,8 @@ function TurnoCard() {
     obtenerDuracionTurno,
     loading,
   } = useTurno();
+  const { registrarInicioSesion, registrarCierreSesion, obtenerHistorial } = useHistorialEmpleados();
+  const { isAdmin } = useRole();
 
   // Obtener usuario directamente del localStorage para el sistema de restaurantes
   const [usuarioActual, setUsuarioActual] = useState("No identificado");
@@ -67,9 +71,11 @@ function TurnoCard() {
     }
   }, [turnoAbierto, obtenerDuracionTurno]);
 
-  const handleAbrirTurno = () => {
+  const handleAbrirTurno = async () => {
     if (abrirTurno()) {
       console.log("Turno abierto exitosamente");
+      // Registrar inicio de sesión
+      await registrarInicioSesion();
       // Mostrar mensaje de confirmación
       alert(
         "¡Turno abierto exitosamente! Ya puedes usar la aplicación completa."
@@ -79,10 +85,85 @@ function TurnoCard() {
     }
   };
 
-  const handleCerrarTurno = () => {
+  const handleCerrarTurno = async () => {
     if (confirm("¿Estás seguro de que quieres cerrar el turno?")) {
       cerrarTurno();
+      // Registrar cierre de sesión
+      await registrarCierreSesion();
       console.log("Turno cerrado exitosamente");
+    }
+  };
+
+  const handleDescargarInforme = async () => {
+    try {
+      const historial = await obtenerHistorial();
+      
+      // Generar colores únicos para cada usuario
+      const usuarios = [...new Set(historial.map(h => h.usuarioId))];
+      const colores = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+      ];
+      const colorMap = {};
+      usuarios.forEach((userId, index) => {
+        colorMap[userId] = colores[index % colores.length];
+      });
+
+      // Crear Excel usando SheetJS (xlsx) con import dinámico
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      
+      // Preparar datos para Excel
+      const datosExcel = historial.map(registro => ({
+        'Usuario': registro.usuarioNombre || registro.usuarioEmail || 'Desconocido',
+        'Email': registro.usuarioEmail || '',
+        'Tipo': registro.tipo === 'inicio' ? 'Inicio de Sesión' : 'Cierre de Sesión',
+        'Fecha': new Date(registro.timestamp?.toDate?.() || registro.timestamp || registro.fecha).toLocaleString('es-ES'),
+        'Hora': new Date(registro.timestamp?.toDate?.() || registro.timestamp || registro.fecha).toLocaleTimeString('es-ES'),
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+      
+      // Agregar colores a las filas según el usuario
+      const range = XLSX.utils.decode_range(worksheet['!ref']);
+      historial.forEach((registro, index) => {
+        const rowIndex = index + 2; // +2 porque la fila 1 es el header
+        if (rowIndex <= range.e.r + 1) {
+          const color = colorMap[registro.usuarioId] || '#FFFFFF';
+          // Aplicar color a todas las celdas de la fila
+          ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+            const cellAddress = XLSX.utils.encode_cell({ r: rowIndex - 1, c: col.charCodeAt(0) - 65 });
+            if (!worksheet[cellAddress]) worksheet[cellAddress] = {};
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: color.replace('#', '') } },
+              font: { color: { rgb: 'FFFFFF' } }
+            };
+          });
+        }
+      });
+
+      // Ajustar ancho de columnas
+      worksheet['!cols'] = [
+        { wch: 25 }, // Usuario
+        { wch: 30 }, // Email
+        { wch: 20 }, // Tipo
+        { wch: 25 }, // Fecha
+        { wch: 15 }, // Hora
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Historial Empleados');
+      
+      // Generar nombre del archivo
+      const fecha = new Date().toISOString().split('T')[0];
+      const nombreArchivo = `Historial_Empleados_${fecha}.xlsx`;
+      
+      // Descargar el archivo
+      XLSX.writeFile(workbook, nombreArchivo);
+      
+      alert('Informe descargado exitosamente');
+    } catch (error) {
+      console.error('Error descargando informe:', error);
+      alert('Error al descargar el informe: ' + error.message);
     }
   };
 
@@ -191,22 +272,27 @@ function TurnoCard() {
             </svg>
             Cerrar
           </button>
-          <button className="flex-1 bg-green-700 hover:bg-green-600 rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center">
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {isAdmin && (
+            <button 
+              onClick={handleDescargarInforme}
+              className="flex-1 bg-green-700 hover:bg-green-600 rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            Informe
-          </button>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Informe
+            </button>
+          )}
         </div>
       </div>
     );

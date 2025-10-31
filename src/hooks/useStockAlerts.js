@@ -102,11 +102,11 @@ export const useStockAlerts = () => {
     fetchStockBajo();
   }, [fetchStockBajo]);
 
-  // Refrescar cada 30 segundos
+  // Refrescar cada 2 minutos (reducido para evitar carga excesiva)
   useEffect(() => {
     const interval = setInterval(() => {
       fetchStockBajo();
-    }, 30000); // 30 segundos
+    }, 2 * 60 * 1000); // 2 minutos
 
     return () => clearInterval(interval);
   }, [fetchStockBajo]);

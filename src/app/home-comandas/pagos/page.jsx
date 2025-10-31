@@ -27,6 +27,8 @@ function PagosContent() {
     getVirtualTotal,
     getTotalIngresos,
     getTotalEgresos,
+    getEgresosEfectivo,
+    getEgresosVirtual,
     getVentasEfectivo,
     getVentasVirtual
   } = usePagosOptimizado();

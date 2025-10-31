@@ -42,11 +42,30 @@ export const useStockAlertManager = () => {
   const checkAlerts = useCallback(async () => {
     await fetchStockBajo();
     
-    if (shouldShowAlert()) {
-      setShowAlert(true);
-      setLastCheck(new Date().getTime());
+    // Verificar si debe mostrar la alerta (lógica inline para evitar dependencias)
+    if (!tieneStockBajo()) return;
+    
+    const dontRemind = localStorage.getItem('stockAlertDontRemind');
+    if (dontRemind === 'true') return;
+    
+    const rememberLater = localStorage.getItem('stockAlertRememberLater');
+    if (rememberLater) {
+      const rememberTime = parseInt(rememberLater);
+      const now = new Date().getTime();
+      
+      if (now < rememberTime) return;
+      
+      localStorage.removeItem('stockAlertRememberLater');
     }
-  }, [fetchStockBajo, shouldShowAlert]);
+    
+    if (lastCheck) {
+      const timeSinceLastCheck = new Date().getTime() - lastCheck;
+      if (timeSinceLastCheck < 5 * 60 * 1000) return; // 5 minutos
+    }
+    
+    setShowAlert(true);
+    setLastCheck(new Date().getTime());
+  }, [fetchStockBajo, tieneStockBajo, lastCheck]);
 
   // Manejar cierre de alerta
   const handleCloseAlert = () => {
@@ -76,10 +95,11 @@ export const useStockAlertManager = () => {
     setLastCheck(null);
   };
 
-  // Verificar alertas al cargar
+  // Verificar alertas al cargar (solo una vez)
   useEffect(() => {
     checkAlerts();
-  }, [checkAlerts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Verificar cada 2 minutos
   useEffect(() => {

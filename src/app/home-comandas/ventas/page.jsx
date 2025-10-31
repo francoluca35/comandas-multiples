@@ -108,8 +108,11 @@ function VentasContent() {
 
   const handleMesaCobrada = async (mesa, paymentMethod = "efectivo") => {
     try {
-      // Marcar la mesa como pagada con el método de pago
-      await markTableAsPaid(mesa.id, paymentMethod, mesa.total);
+      // Determinar tipo de venta según el modo activo
+      const tipoVenta = activeMode || "salon";
+      
+      // Marcar la mesa como pagada con el método de pago y tipo de venta
+      await markTableAsPaid(mesa.id, paymentMethod, mesa.total, tipoVenta);
       // Recargar las mesas para actualizar el estado
       await fetchTables();
       // Volver a la vista de mesas

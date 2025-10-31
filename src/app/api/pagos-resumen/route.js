@@ -107,18 +107,34 @@ export async function GET(request) {
       }
     });
 
-    // Calcular totales de egresos
+    // Calcular totales de egresos separados por tipo
     let totalEgresos = 0;
+    let egresosEfectivo = 0;
+    let egresosVirtual = 0;
     const egresos = [];
     egresosSnapshot.forEach((doc) => {
       const egresoData = doc.data();
       if (egresoData.monto && !isNaN(parseFloat(egresoData.monto))) {
-        totalEgresos += parseFloat(egresoData.monto);
+        const monto = parseFloat(egresoData.monto);
+        totalEgresos += monto;
+        
+        // Separar por forma de pago
+        if (egresoData.formaPago === "virtual") {
+          egresosVirtual += monto;
+        } else if (egresoData.formaPago === "efectivo") {
+          egresosEfectivo += monto;
+        } else {
+          // Por defecto, si no tiene formaPago definida, considerar como efectivo
+          egresosEfectivo += monto;
+        }
+        
         egresos.push({
           id: doc.id,
-          monto: parseFloat(egresoData.monto),
+          monto: monto,
           motivo: egresoData.motivo || "Sin motivo",
-          fecha: egresoData.fecha
+          fecha: egresoData.fecha,
+          formaPago: egresoData.formaPago || "efectivo",
+          tipo: egresoData.tipo || "egreso"
         });
       }
     });
@@ -178,8 +194,20 @@ export async function GET(request) {
           if (motivo.includes("Cobranza mesa") || motivo.includes("Takeaway") || motivo.includes("Delivery")) {
             const total = parseFloat(ingresoData.monto);
             
-            // Por defecto, asumir efectivo (puedes ajustar esto según tu lógica)
-            ventasEfectivo += total;
+            // Determinar si es efectivo o virtual según opcionPago o formaIngreso
+            const opcionPago = ingresoData.opcionPago || "";
+            const formaIngreso = (ingresoData.formaIngreso || "").toLowerCase();
+            
+            if (opcionPago === "cuenta_restaurante") {
+              ventasVirtual += total;
+            } else if (opcionPago === "caja" || formaIngreso === "efectivo") {
+              ventasEfectivo += total;
+            } else if (formaIngreso === "mercadopago" || formaIngreso === "mercado pago" || formaIngreso === "tarjeta" || formaIngreso === "transferencia") {
+              ventasVirtual += total;
+            } else {
+              // Por defecto, asumir efectivo
+              ventasEfectivo += total;
+            }
           }
         }
       });
@@ -194,6 +222,8 @@ export async function GET(request) {
       ventasVirtual,
       totalIngresos,
       totalEgresos,
+      egresosEfectivo,
+      egresosVirtual,
       mesasCount: mesasSnapshot.size,
       takeawayCount: takeawaySnapshot.size,
       deliveryCount: deliverySnapshot.size
@@ -218,6 +248,8 @@ export async function GET(request) {
         egresos: {
           egresos: egresos.slice(0, 10), // Solo últimos 10 para la UI
           totalEgresos,
+          egresosEfectivo,
+          egresosVirtual,
           tipos: [] // No enviar tipos para optimizar
         },
         ventas: {

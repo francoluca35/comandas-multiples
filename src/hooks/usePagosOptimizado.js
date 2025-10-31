@@ -18,6 +18,8 @@ export const usePagosOptimizado = () => {
     egresos: {
       egresos: [],
       totalEgresos: 0,
+      egresosEfectivo: 0,
+      egresosVirtual: 0,
       tipos: [],
     },
     ventas: {
@@ -220,6 +222,14 @@ export const usePagosOptimizado = () => {
     return data.egresos.totalEgresos;
   };
 
+  const getEgresosEfectivo = () => {
+    return data.egresos.egresosEfectivo || 0;
+  };
+
+  const getEgresosVirtual = () => {
+    return data.egresos.egresosVirtual || 0;
+  };
+
   const getVentasEfectivo = () => {
     return data.ventas.efectivo;
   };
@@ -253,6 +263,8 @@ export const usePagosOptimizado = () => {
     // Totales de ingresos y egresos
     getTotalIngresos,
     getTotalEgresos,
+    getEgresosEfectivo,
+    getEgresosVirtual,
     
     // Totales de ventas únicamente
     getVentasEfectivo,

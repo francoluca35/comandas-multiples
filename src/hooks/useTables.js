@@ -321,7 +321,7 @@ export const useTables = () => {
   };
 
   // Marcar mesa como pagada
-  const markTableAsPaid = async (tableId, paymentMethod = "efectivo", total = null) => {
+  const markTableAsPaid = async (tableId, paymentMethod = "efectivo", total = null, tipoVenta = "salon") => {
     setLoading(true);
     setError(null);
     try {
@@ -332,10 +332,25 @@ export const useTables = () => {
       const tableDoc = await getDoc(tableRef);
       const tableData = tableDoc.data();
 
+      // Determinar tipo de venta si no se proporciona
+      let tipoFinal = tipoVenta;
+      if (!tipoFinal) {
+        // Intentar determinar desde el número de mesa
+        const numeroMesa = tableData?.numero || "";
+        if (numeroMesa.toString().toUpperCase() === "TAKEAWAY" || numeroMesa.toString().includes("TAKEAWAY")) {
+          tipoFinal = "takeaway";
+        } else if (numeroMesa.toString().toUpperCase() === "DELIVERY" || numeroMesa.toString().includes("DELIVERY")) {
+          tipoFinal = "delivery";
+        } else {
+          tipoFinal = "salon";
+        }
+      }
+
       const updateFields = {
         estado: "pagado",
         metodoPago: paymentMethod,
         total: total || tableData.total || 0,
+        tipoVenta: tipoFinal,
         updatedAt: serverTimestamp(),
       };
 
@@ -348,10 +363,39 @@ export const useTables = () => {
         )
       );
 
+      // Incrementar contador de ventas
+      try {
+        const mesActual = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        const contadoresRef = doc(db, "restaurantes", restaurantId, "contadoresVentas", mesActual);
+        const contadoresSnap = await getDoc(contadoresRef);
+        
+        if (contadoresSnap.exists()) {
+          const data = contadoresSnap.data();
+          const nuevoValor = (data[tipoFinal] || 0) + 1;
+          await updateDoc(contadoresRef, {
+            [tipoFinal]: nuevoValor,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await setDoc(contadoresRef, {
+            salon: tipoFinal === "salon" ? 1 : 0,
+            takeaway: tipoFinal === "takeaway" ? 1 : 0,
+            delivery: tipoFinal === "delivery" ? 1 : 0,
+            mes: mesActual,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+      } catch (err) {
+        console.error("Error incrementando contador de ventas:", err);
+        // No lanzar error para no interrumpir el flujo principal
+      }
+
       console.log("✅ Mesa marcada como pagada:", {
         tableId,
         paymentMethod,
-        total: updateFields.total
+        total: updateFields.total,
+        tipoVenta: tipoFinal
       });
     } catch (err) {
       console.error("Error marking table as paid:", err);
