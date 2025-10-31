@@ -508,6 +508,53 @@ Por favor, completa el pago para confirmar tu pedido. Gracias! 🍕`;
           </div>
         </div>
 
+        {/* Mensaje de estado del pago */}
+        {paymentStatusMessage && (
+          <div className={`mb-4 p-4 rounded-lg text-center font-semibold ${
+            isApproved || paymentConfirmed 
+              ? "bg-green-100 text-green-800 border-2 border-green-500 animate-pulse" 
+              : isPending 
+                ? "bg-yellow-100 text-yellow-800 border-2 border-yellow-500" 
+                : isRejected 
+                  ? "bg-red-100 text-red-800 border-2 border-red-500" 
+                  : "bg-blue-100 text-blue-800 border-2 border-blue-500"
+          }`}>
+            <div className="flex items-center justify-center space-x-2">
+              {isApproved || paymentConfirmed ? (
+                <>
+                  <svg className="w-6 h-6 text-green-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-lg">{paymentStatusMessage}</span>
+                </>
+              ) : isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
+                  <span>{paymentStatusMessage}</span>
+                </>
+              ) : isRejected ? (
+                <>
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>{paymentStatusMessage}</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{paymentStatusMessage}</span>
+                </>
+              )}
+            </div>
+            {externalReference && (
+              <p className="text-xs mt-2 opacity-75">
+                Monitoreando pago: {externalReference.substring(0, 20)}...
+              </p>
+            )}
+          </div>
+        )}
 
         {/* QR Code o Link según el tipo de pedido */}
         <div className="text-center mb-6">

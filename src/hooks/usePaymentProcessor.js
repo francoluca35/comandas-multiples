@@ -89,6 +89,7 @@ export const usePaymentProcessor = () => {
         const qrData = {
           ...data,
           initPoint: data.initPoint, // Usar siempre initPoint (producción)
+          externalReference: data.externalReference, // Incluir externalReference en los datos
         };
 
         const result = {

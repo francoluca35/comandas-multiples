@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import TicketSendModal from "@/components/TicketSendModal";
+import QRPaymentModal from "@/components/QRPaymentModal";
+import { usePaymentProcessor } from "@/hooks/usePaymentProcessor";
 
 export default function EnhancedPaymentModal({
   isOpen,
@@ -13,7 +15,10 @@ export default function EnhancedPaymentModal({
   const [cashAmount, setCashAmount] = useState("");
   const [mercadopagoOption, setMercadopagoOption] = useState("");
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { processPayment: processMercadoPagoPayment } = usePaymentProcessor();
 
   const total = orderData?.monto || 0;
   const change = cashAmount ? (parseFloat(cashAmount) - total).toFixed(2) : 0;
@@ -21,7 +26,12 @@ export default function EnhancedPaymentModal({
   const handlePaymentMethodSelect = (method) => {
     setPaymentMethod(method);
     setCashAmount("");
-    setMercadopagoOption("");
+    // Si es MercadoPago y es DELIVERY, auto-seleccionar "link"
+    if (method === "mercadopago" && orderData?.mesa === "DELIVERY") {
+      setMercadopagoOption("link");
+    } else {
+      setMercadopagoOption("");
+    }
   };
 
   const handleProcessPayment = async () => {
@@ -43,9 +53,50 @@ export default function EnhancedPaymentModal({
     setIsProcessing(true);
 
     try {
-      // Simular procesamiento del pago
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Si es MercadoPago, primero generar el QR o link
+      if (paymentMethod === "mercadopago") {
+        try {
+          console.log("💳 Procesando pago con Mercado Pago...");
+          
+          // Preparar datos del pedido para Mercado Pago
+          const mercadoPagoOrderData = {
+            mesa: orderData.mesa,
+            cliente: orderData.cliente || "Cliente",
+            monto: orderData.monto || total,
+            productos: orderData.productos || [],
+            whatsapp: orderData.whatsapp || "",
+            direccion: orderData.direccion || "",
+          };
 
+          // Llamar a processPayment con método "qr" (tanto para QR como para link)
+          const result = await processMercadoPagoPayment(mercadoPagoOrderData, "qr");
+
+          if (result?.success && result?.data) {
+            console.log("✅ Datos de pago recibidos:", result.data);
+            console.log("✅ External Reference:", result.externalReference);
+            
+            // Guardar datos del pago incluyendo externalReference
+            setPaymentData({
+              ...result.data,
+              externalReference: result.externalReference || result.data.externalReference,
+            });
+            
+            // Mostrar modal de QR (que también puede mostrar el link)
+            setShowQRModal(true);
+            setIsProcessing(false);
+            return;
+          } else {
+            throw new Error("No se pudieron obtener los datos de pago de Mercado Pago");
+          }
+        } catch (paymentError) {
+          console.error("❌ Error procesando pago Mercado Pago:", paymentError);
+          alert(`Error al procesar el pago con Mercado Pago: ${paymentError.message}`);
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // Para efectivo, continuar con la lógica normal
       // Obtener el restauranteId del localStorage o contexto
       let restaurantId = localStorage.getItem("restauranteId");
       
@@ -82,7 +133,6 @@ export default function EnhancedPaymentModal({
         metodoPago: paymentMethod,
         montoRecibido: paymentMethod === "efectivo" ? parseFloat(cashAmount) : total,
         vuelto: paymentMethod === "efectivo" ? parseFloat(change) : 0,
-        mercadopagoOption: paymentMethod === "mercadopago" ? mercadopagoOption : null,
         whatsapp: orderData.whatsapp || "",
         direccion: orderData.direccion || "",
         timestamp: new Date(),
@@ -127,6 +177,31 @@ export default function EnhancedPaymentModal({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Cerrar modal de QR primero
+    setShowQRModal(false);
+    setPaymentData(null);
+    
+    // Preparar datos del pedido para el ticket (ya está enviado a cocina desde QRPaymentModal)
+    // Solo mostramos el modal de ticket para enviar por WhatsApp o mail
+    const ticketOrderData = {
+      ...orderData,
+      metodoPago: "mercadopago",
+      montoRecibido: orderData.monto || total,
+      vuelto: 0,
+      // Indicar que ya está enviado a cocina
+      yaEnviadoACocina: true,
+    };
+    
+    // Mostrar modal de envío de ticket después del pago exitoso
+    setShowTicketModal(true);
+  };
+
+  const handleQRModalClose = () => {
+    setShowQRModal(false);
+    setPaymentData(null);
   };
 
   const handleTicketSent = () => {
@@ -260,24 +335,31 @@ export default function EnhancedPaymentModal({
             {paymentMethod === "mercadopago" && (
               <div className="space-y-4">
                 <h4 className="text-white font-medium">Selecciona una opción:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setMercadopagoOption("qr")}
-                    className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                      mercadopagoOption === "qr"
-                        ? "border-blue-500 bg-blue-500/20 shadow-lg"
-                        : "border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700/80"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <div className="text-2xl mb-2">📱</div>
-                      <div className={`font-semibold ${
-                        mercadopagoOption === "qr" ? "text-white" : "text-slate-300"
-                      }`}>
-                        Código QR
+                <div className={`grid gap-4 ${
+                  orderData?.mesa === "DELIVERY" 
+                    ? "grid-cols-1" 
+                    : "grid-cols-1 sm:grid-cols-2"
+                }`}>
+                  {/* Solo mostrar QR si NO es DELIVERY */}
+                  {orderData?.mesa !== "DELIVERY" && (
+                    <button
+                      onClick={() => setMercadopagoOption("qr")}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                        mercadopagoOption === "qr"
+                          ? "border-blue-500 bg-blue-500/20 shadow-lg"
+                          : "border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700/80"
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className="text-2xl mb-2">📱</div>
+                        <div className={`font-semibold ${
+                          mercadopagoOption === "qr" ? "text-white" : "text-slate-300"
+                        }`}>
+                          Código QR
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setMercadopagoOption("link")}
@@ -297,6 +379,12 @@ export default function EnhancedPaymentModal({
                     </div>
                   </button>
                 </div>
+                {/* Mensaje informativo para Delivery */}
+                {orderData?.mesa === "DELIVERY" && (
+                  <p className="text-xs text-slate-400 text-center">
+                    Para pedidos de delivery solo está disponible el link de pago
+                  </p>
+                )}
               </div>
             )}
 
@@ -326,6 +414,22 @@ export default function EnhancedPaymentModal({
         </div>
       </div>
 
+      {/* Modal de QR/Link de pago Mercado Pago */}
+      {showQRModal && paymentData && (
+        <QRPaymentModal
+          isOpen={showQRModal}
+          onClose={handleQRModalClose}
+          paymentData={paymentData}
+          orderData={{
+            ...orderData,
+            monto: orderData.monto || total,
+            total: orderData.monto || total,
+            mercadopagoOption: mercadopagoOption, // Pasar la opción seleccionada (qr o link)
+          }}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
+
       {/* Modal de envío de ticket */}
       {showTicketModal && (
         <TicketSendModal
@@ -333,9 +437,12 @@ export default function EnhancedPaymentModal({
           onClose={() => setShowTicketModal(false)}
           orderData={{
             ...orderData,
-            metodoPago: paymentMethod,
-            montoRecibido: paymentMethod === "efectivo" ? parseFloat(cashAmount) : total,
+            metodoPago: paymentMethod || "mercadopago",
+            montoRecibido: paymentMethod === "efectivo" ? parseFloat(cashAmount) : (orderData.monto || total),
             vuelto: paymentMethod === "efectivo" ? parseFloat(change) : 0,
+            // Asegurar que tenga los datos correctos
+            monto: orderData.monto || total,
+            total: orderData.monto || total,
           }}
           onSendComplete={handleTicketSent}
         />

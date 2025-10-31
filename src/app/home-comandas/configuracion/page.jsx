@@ -10,7 +10,7 @@ import useKitchenNotifications from "../../../hooks/useKitchenNotifications";
 import { useAuth } from "../../context/AuthContext";
 import { useRestaurant } from "../../context/RestaurantContext";
 import { db } from "../../../../lib/firebase"; 
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import { FaVolumeUp, FaVolumeMute, FaCog, FaBell, FaMusic, FaPlay, FaStop, FaCreditCard, FaStore, FaUsers } from "react-icons/fa";
 import UserManagement from "../../../components/UserManagement";
 
@@ -558,8 +558,20 @@ function ConfiguracionContent() {
         const restaurantDoc = await getDoc(doc(db, "restaurantes", restaurant.id));
         const data = restaurantDoc.data();
 
-        // Cargar configuración existente si existe
-        if (data?.mercadopago) {
+        // Cargar configuración de Mercado Pago desde Mpagos/configuracion
+        const mpagoConfigRef = doc(db, "restaurantes", restaurant.id, "Mpagos", "configuracion");
+        const mpagoConfigDoc = await getDoc(mpagoConfigRef);
+        
+        if (mpagoConfigDoc.exists()) {
+          const mpagoData = mpagoConfigDoc.data();
+          setMercadopagoConfig({
+            accessToken: mpagoData.accessToken || "",
+            publicKey: mpagoData.publickey || mpagoData.publicKey || "",
+            webhookSecret: mpagoData.webhookSecret || "",
+            isConfigured: !!mpagoData.accessToken,
+          });
+        } else if (data?.mercadopago) {
+          // Fallback: cargar desde documento principal si existe
           setMercadopagoConfig({
             accessToken: data.mercadopago.accessToken || "",
             publicKey: data.mercadopago.publicKey || "",
@@ -601,18 +613,19 @@ function ConfiguracionContent() {
         return;
       }
 
-      // Actualizar la configuración en Firestore
-      await updateDoc(doc(db, "restaurantes", restaurant.id), {
-        mercadopago: {
-          accessToken: mercadopagoConfig.accessToken,
-          publicKey: mercadopagoConfig.publicKey,
-          webhookSecret: mercadopagoConfig.webhookSecret,
-          configuredAt: new Date(),
-          isActive: true,
-        },
-        configuracionCompleta: true,
-        updatedAt: new Date(),
-      });
+      // Guardar la configuración en Mpagos/configuracion
+      const mpagoConfigRef = doc(db, "restaurantes", restaurant.id, "Mpagos", "configuracion");
+      const mpagoConfigDoc = await getDoc(mpagoConfigRef);
+      const mpagoExistingData = mpagoConfigDoc.exists() ? mpagoConfigDoc.data() : null;
+      
+      await setDoc(mpagoConfigRef, {
+        accessToken: mercadopagoConfig.accessToken,
+        publickey: mercadopagoConfig.publicKey, // Guardar como 'publickey' para coincidir con la estructura existente
+        webhookSecret: mercadopagoConfig.webhookSecret || "",
+        activo: true,
+        fechaActualizacion: new Date(),
+        fechaCreacion: mpagoExistingData?.fechaCreacion || new Date(),
+      }, { merge: true });
 
       setMercadopagoConfig((prev) => ({ ...prev, isConfigured: true }));
       alert("¡Configuración de Mercado Pago guardada exitosamente!");

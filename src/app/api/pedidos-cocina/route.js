@@ -67,7 +67,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { restauranteId, mesa, productos, total, cliente, notas } = body;
+    const { restauranteId, mesa, productos, total, cliente, notas, direccion, whatsapp, metodoPago } = body;
 
     if (!restauranteId || !mesa || !productos || productos.length === 0) {
       return NextResponse.json(
@@ -82,6 +82,9 @@ export async function POST(request) {
       total: total,
       cliente: cliente || "Sin nombre",
       notas: notas || "",
+      direccion: direccion || "", // Guardar dirección para pedidos de delivery
+      whatsapp: whatsapp || "", // Guardar WhatsApp para pedidos de delivery
+      metodoPago: metodoPago || "efectivo", // Guardar método de pago
       estado: "pendiente", // pendiente, en_preparacion, listo
       timestamp: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -142,8 +145,128 @@ export async function PUT(request) {
       updatedAt: serverTimestamp(),
     });
 
-    // Si el pedido se marca como "listo", actualizar el estado de la mesa a "ocupado"
-    if (nuevoEstado === "listo" && pedidoData.mesa) {
+    // Si el pedido se marca como "listo" y es un pedido de DELIVERY, actualizar en colección delivery
+    if (nuevoEstado === "listo" && pedidoData.mesa === "DELIVERY") {
+      try {
+        console.log("🚴 Pedido de delivery marcado como listo, actualizando colección delivery...");
+        console.log("📋 Datos del pedido:", {
+          cliente: pedidoData.cliente,
+          direccion: pedidoData.direccion,
+          total: pedidoData.total,
+          productos: pedidoData.productos?.length || 0,
+        });
+        
+        const deliveryRef = collection(db, `restaurantes/${restauranteId}/delivery`);
+        
+        // Buscar si ya existe un pedido de delivery con pedidoCocinaId o por cliente y dirección reciente
+        let deliveryDocRef = null;
+        let deliveryId = null;
+        
+        // Primero buscar por pedidoCocinaId si existe
+        if (pedidoData.pedidoCocinaId) {
+          const deliveryQueryById = query(
+            deliveryRef,
+            where("pedidoCocinaId", "==", pedidoData.pedidoCocinaId || pedidoId)
+          );
+          const deliverySnapshotById = await getDocs(deliveryQueryById);
+          
+          if (!deliverySnapshotById.empty) {
+            const existingDelivery = deliverySnapshotById.docs[0];
+            deliveryDocRef = doc(
+              db,
+              `restaurantes/${restauranteId}/delivery/${existingDelivery.id}`
+            );
+            deliveryId = existingDelivery.id;
+          }
+        }
+        
+        // Si no se encontró por ID, buscar por cliente y dirección (pedidos recientes)
+        if (!deliveryDocRef) {
+          const deliveryQuery = query(
+            deliveryRef,
+            where("cliente", "==", pedidoData.cliente || "Sin nombre"),
+            where("direccion", "==", pedidoData.direccion || ""),
+            orderBy("fechaVenta", "desc")
+          );
+          
+          try {
+            const deliverySnapshot = await getDocs(deliveryQuery);
+            
+            if (!deliverySnapshot.empty) {
+              // Tomar el pedido más reciente
+              const existingDelivery = deliverySnapshot.docs[0];
+              deliveryDocRef = doc(
+                db,
+                `restaurantes/${restauranteId}/delivery/${existingDelivery.id}`
+              );
+              deliveryId = existingDelivery.id;
+            }
+          } catch (queryError) {
+            // Si la query falla (porque fechaVenta no está indexado), buscar sin orderBy
+            const deliveryQuerySimple = query(
+              deliveryRef,
+              where("cliente", "==", pedidoData.cliente || "Sin nombre"),
+              where("direccion", "==", pedidoData.direccion || "")
+            );
+            const deliverySnapshot = await getDocs(deliveryQuerySimple);
+            
+            if (!deliverySnapshot.empty) {
+              const existingDelivery = deliverySnapshot.docs[0];
+              deliveryDocRef = doc(
+                db,
+                `restaurantes/${restauranteId}/delivery/${existingDelivery.id}`
+              );
+              deliveryId = existingDelivery.id;
+            }
+          }
+        }
+        
+        if (deliveryDocRef) {
+          // Si existe, actualizar el pedido existente
+          await updateDoc(deliveryDocRef, {
+            status: "listo", // Cambiar estado a "listo" para que aparezca en el dashboard del repartidor
+            cliente: pedidoData.cliente || "Sin nombre",
+            direccion: pedidoData.direccion || "", // Asegurar que la dirección se guarde
+            productos: pedidoData.productos || [],
+            total: pedidoData.total || 0,
+            metodoPago: pedidoData.metodoPago || pedidoData.paymentMethod || "efectivo",
+            fechaVenta: pedidoData.timestamp || serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            fechaListo: serverTimestamp(), // Fecha cuando cocina marcó como listo
+            pedidoCocinaId: pedidoId, // Guardar referencia al pedido de cocina
+            whatsapp: pedidoData.whatsapp || "", // Asegurar que el WhatsApp se guarde
+          });
+          
+          console.log("✅ Pedido de delivery actualizado en colección delivery:", deliveryId);
+        } else {
+          // Si no existe, crear un nuevo pedido en la colección delivery
+          const nuevoPedidoDelivery = {
+            cliente: pedidoData.cliente || "Sin nombre",
+            direccion: pedidoData.direccion || "",
+            productos: pedidoData.productos || [],
+            total: pedidoData.total || 0,
+            metodoPago: pedidoData.metodoPago || pedidoData.paymentMethod || "efectivo",
+            status: "listo", // Estado "listo" para que aparezca en el dashboard del repartidor
+            fechaVenta: pedidoData.timestamp || serverTimestamp(),
+            fechaListo: serverTimestamp(), // Fecha cuando cocina marcó como listo
+            updatedAt: serverTimestamp(),
+            pedidoCocinaId: pedidoId, // Guardar referencia al pedido de cocina
+            // Incluir datos adicionales si existen
+            whatsapp: pedidoData.whatsapp || "",
+            notas: pedidoData.notas || "",
+          };
+          
+          const newDeliveryDoc = await addDoc(deliveryRef, nuevoPedidoDelivery);
+          console.log("✅ Nuevo pedido de delivery creado en colección delivery:", newDeliveryDoc.id);
+        }
+      } catch (deliveryError) {
+        console.error("❌ Error al actualizar pedido en colección delivery:", deliveryError);
+        // No fallar el pedido si hay error al actualizar delivery
+      }
+    }
+
+    // Si el pedido se marca como "listo", actualizar el estado de la mesa a "ocupado" (solo para mesas, no delivery)
+    if (nuevoEstado === "listo" && pedidoData.mesa && pedidoData.mesa !== "DELIVERY" && pedidoData.mesa !== "TAKEAWAY") {
       try {
         // Buscar la mesa por número
         const tablesRef = collection(

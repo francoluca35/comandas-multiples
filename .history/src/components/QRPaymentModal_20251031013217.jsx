@@ -11,57 +11,15 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [hasAutoProcessed, setHasAutoProcessed] = useState(false);
-  const [paymentStatusMessage, setPaymentStatusMessage] = useState("");
   const { crearIngreso } = useIngresos();
   
   // Usar el hook para monitorear el estado del pago automáticamente
   const externalReference = paymentData?.externalReference || null;
   const { paymentStatus, isApproved, isPending, isRejected, loading: paymentStatusLoading } = usePaymentStatus(externalReference);
 
-  // Logging para debugging
-  useEffect(() => {
-    if (externalReference) {
-      console.log("🔍 Monitoreando pago con externalReference:", externalReference);
-    }
-  }, [externalReference]);
-
-  useEffect(() => {
-    if (paymentStatus) {
-      console.log("📊 Estado del pago actualizado:", {
-        status: paymentStatus.status,
-        amount: paymentStatus.amount,
-        externalReference: paymentStatus.externalReference,
-      });
-    }
-  }, [paymentStatus]);
-
-  // Actualizar mensaje de estado
-  useEffect(() => {
-    if (isApproved) {
-      setPaymentStatusMessage("✅ ¡Pago Aprobado! Procesando pedido...");
-    } else if (isPending) {
-      setPaymentStatusMessage("⏳ Esperando confirmación del pago...");
-    } else if (isRejected) {
-      setPaymentStatusMessage("❌ Pago rechazado. Por favor intenta nuevamente.");
-    } else if (paymentStatusLoading) {
-      setPaymentStatusMessage("🔄 Verificando estado del pago...");
-    } else {
-      setPaymentStatusMessage("💳 Escanea el código QR o usa el link para pagar");
-    }
-  }, [isApproved, isPending, isRejected, paymentStatusLoading]);
-
   useEffect(() => {
     if (isOpen && paymentData?.initPoint) {
-      // Solo generar QR si NO es DELIVERY y NO está seleccionado "link"
-      const isDelivery = orderData?.mesa === "DELIVERY";
-      const isLinkOnly = orderData?.mercadopagoOption === "link";
-      
-      if (!isDelivery && !isLinkOnly) {
-        generateQRCode();
-      } else {
-        // Para DELIVERY o link, solo mostrar el link (no generar QR)
-        setIsLoading(false);
-      }
+      generateQRCode();
       setPaymentConfirmed(false);
       setHasAutoProcessed(false);
     } else {
@@ -72,7 +30,7 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
         setError("No se recibió la URL de pago de Mercado Pago");
       }
     }
-  }, [isOpen, paymentData, orderData]);
+  }, [isOpen, paymentData]);
 
   const registrarIngresoAutomatico = async () => {
     try {
@@ -149,76 +107,14 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
     setIsCheckingPayment(true);
     try {
       console.log("🔄 Procesando pago aprobado automáticamente...");
-      setPaymentStatusMessage("🔄 Procesando pedido...");
       
       // Registrar ingreso automático
-      const fecha = new Date();
-      const isDelivery = orderData.mesa === "DELIVERY";
-      const isTakeaway = orderData.mesa === "TAKEAWAY";
-      const motivo = `${isDelivery ? 'Delivery' : 'Takeaway'} - Cliente: ${orderData.cliente}`;
-      const tipoIngreso = isDelivery ? "Venta Delivery" : "Venta Takeaway";
-      const formaIngreso = "MercadoPago";
-      const opcionPago = "cuenta_restaurante";
-      
-      setPaymentStatusMessage("💰 Registrando ingreso...");
-      await crearIngreso(tipoIngreso, motivo, orderData.total || orderData.monto, formaIngreso, fecha, opcionPago);
-      console.log("✅ Ingreso MercadoPago registrado exitosamente");
+      await registrarIngresoAutomatico();
       
       // Enviar a cocina
-      const restauranteId = localStorage.getItem("restauranteId");
-      if (!restauranteId) {
-        throw new Error("No se encontró el ID del restaurante");
-      }
-
-      setPaymentStatusMessage("🚀 Enviando pedido a cocina...");
-      const pedidoCocina = {
-        mesa: orderData.mesa,
-        productos: orderData.productos,
-        total: orderData.total || orderData.monto,
-        cliente: orderData.cliente,
-        direccion: isDelivery ? orderData.direccion : undefined,
-        whatsapp: orderData.whatsapp || "",
-        metodoPago: "mercadopago",
-        notas: "",
-        timestamp: new Date(),
-        estado: "pendiente",
-        restauranteId: restauranteId,
-        tipo: isDelivery ? "delivery" : "takeaway",
-      };
-
-      const response = await fetch("/api/pedidos-cocina", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(pedidoCocina),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al enviar pedido a cocina");
-      }
-
-      const result = await response.json();
-      console.log(`✅ Pedido ${isDelivery ? 'delivery' : 'takeaway'} enviado a cocina exitosamente:`, result);
+      await enviarACocina();
       
       setPaymentConfirmed(true);
-      setPaymentStatusMessage("✅ ¡Pago confirmado y pedido enviado a cocina exitosamente!");
-      
-      // Mostrar notificación con SweetAlert si está disponible
-      if (typeof window !== "undefined" && window.Swal) {
-        window.Swal.fire({
-          icon: "success",
-          title: "¡Pago Acreditado!",
-          text: "El pago ha sido confirmado y el pedido ha sido enviado a cocina automáticamente.",
-          timer: 3000,
-          showConfirmButton: true,
-        });
-      } else {
-        // Fallback: alert simple
-        setTimeout(() => {
-          alert("✅ ¡Pago acreditado! El pedido ha sido enviado a cocina.");
-        }, 500);
-      }
       
       // Llamar al callback de pago exitoso
       if (onPaymentSuccess) {
@@ -227,8 +123,7 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
     } catch (error) {
       console.error("❌ Error procesando pago automáticamente:", error);
       setHasAutoProcessed(false); // Permitir reintentar
-      setPaymentStatusMessage(`❌ Error: ${error.message}`);
-      alert(`Error al procesar el pago: ${error.message}`);
+      alert("Error al procesar el pago. Inténtalo de nuevo.");
     } finally {
       setIsCheckingPayment(false);
     }
@@ -236,26 +131,13 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
 
   // Monitorear automáticamente el estado del pago
   useEffect(() => {
-    console.log("🔍 Monitoreo de pago:", {
-      isApproved,
-      paymentConfirmed,
-      hasAutoProcessed,
-      externalReference,
-      paymentStatus: paymentStatus?.status,
-    });
-
     // Si el pago está aprobado y no lo hemos procesado aún, procesarlo automáticamente
     if (isApproved && !paymentConfirmed && !hasAutoProcessed && externalReference) {
       console.log("✅ Pago aprobado automáticamente, procesando...");
-      console.log("📋 Datos del pago:", paymentStatus);
-      
-      // Mostrar notificación visual
-      setPaymentStatusMessage("✅ ¡Pago Aprobado! Enviando pedido a cocina...");
-      
       setHasAutoProcessed(true);
       handleAutoProcessPayment();
     }
-  }, [isApproved, paymentConfirmed, hasAutoProcessed, externalReference, handleAutoProcessPayment, paymentStatus]);
+  }, [isApproved, paymentConfirmed, hasAutoProcessed, externalReference, handleAutoProcessPayment]);
 
   const generateQRCode = async () => {
     try {
@@ -305,61 +187,30 @@ function QRPaymentModal({ isOpen, onClose, paymentData, orderData, onPaymentSucc
     }
   };
 
-  const handleSendWhatsApp = () => {
-    if (paymentData?.initPoint) {
-      // Obtener el nombre del cliente y el total del pedido
-      const cliente = orderData?.cliente || "Cliente";
-      const total = orderData?.monto || orderData?.total || 0;
+  // Función para procesar el pago automáticamente cuando se aprueba
+  const handleAutoProcessPayment = async () => {
+    setIsCheckingPayment(true);
+    try {
+      console.log("🔄 Procesando pago aprobado automáticamente...");
       
-      // Crear el mensaje para WhatsApp
-      const mensaje = `Hola ${cliente}! 👋
-
-Te enviamos el link de pago para tu pedido de delivery:
-
-🔗 Link de pago Mercado Pago:
-${paymentData.initPoint}
-
-💰 Total a pagar: $${total.toFixed(2)}
-
-Por favor, completa el pago para confirmar tu pedido. Gracias! 🍕`;
-
-      // Codificar el mensaje para URL
-      const mensajeCodificado = encodeURIComponent(mensaje);
+      // Registrar ingreso automático
+      await registrarIngresoAutomatico();
       
-      // Limpiar y formatear el número de WhatsApp si existe
-      let whatsappNumber = orderData?.whatsapp || "";
-      if (whatsappNumber) {
-        // Eliminar espacios, guiones, paréntesis y otros caracteres
-        whatsappNumber = whatsappNumber.replace(/[\s\-\(\)\.]/g, "");
-        // Si no empieza con código de país, agregar (para Argentina: 54)
-        if (!whatsappNumber.startsWith("54") && !whatsappNumber.startsWith("+54")) {
-          // Asumir que es un número argentino y agregar 54
-          if (whatsappNumber.startsWith("9") || whatsappNumber.startsWith("15")) {
-            whatsappNumber = whatsappNumber.replace(/^(9|15)/, "");
-          }
-          whatsappNumber = "54" + whatsappNumber;
-        }
-        // Eliminar el + si existe
-        whatsappNumber = whatsappNumber.replace(/^\+/, "");
+      // Enviar a cocina
+      await enviarACocina();
+      
+      setPaymentConfirmed(true);
+      
+      // Llamar al callback de pago exitoso
+      if (onPaymentSuccess) {
+        onPaymentSuccess("mercadopago");
       }
-      
-      // Si hay número de WhatsApp, abrir directamente con ese número
-      if (whatsappNumber) {
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${mensajeCodificado}`;
-        window.open(whatsappUrl, "_blank");
-      } else {
-        // Si no hay número, abrir WhatsApp Web y copiar el mensaje al portapapeles
-        const whatsappWebUrl = `https://web.whatsapp.com/send?text=${mensajeCodificado}`;
-        window.open(whatsappWebUrl, "_blank");
-        
-        // Copiar el mensaje al portapapeles para facilitar el envío
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(mensaje);
-          setTimeout(() => {
-            alert("💬 Mensaje copiado al portapapeles.\n\nSi WhatsApp Web no se abre, pégalo manualmente en el chat del cliente.");
-          }, 500);
-        }
-      }
+    } catch (error) {
+      console.error("❌ Error procesando pago automáticamente:", error);
+      setHasAutoProcessed(false); // Permitir reintentar
+      alert("Error al procesar el pago. Inténtalo de nuevo.");
+    } finally {
+      setIsCheckingPayment(false);
     }
   };
 
@@ -427,41 +278,20 @@ Por favor, completa el pago para confirmar tu pedido. Gracias! 🍕`;
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2">
-            {orderData?.mesa === "DELIVERY" || orderData?.mercadopagoOption === "link" ? (
-              <>
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
-                <span className="text-gray-800 font-bold text-lg">Link de Pago Mercado Pago</span>
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z"
-                  />
-                </svg>
-                <span className="text-gray-800 font-bold text-lg">Pago con QR</span>
-              </>
-            )}
+            <svg
+              className="w-6 h-6 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z"
+              />
+            </svg>
+            <span className="text-gray-800 font-bold text-lg">Pago con QR</span>
           </div>
           <button
             onClick={onClose}
@@ -508,101 +338,55 @@ Por favor, completa el pago para confirmar tu pedido. Gracias! 🍕`;
           </div>
         </div>
 
-
-        {/* QR Code o Link según el tipo de pedido */}
+        {/* QR Code */}
         <div className="text-center mb-6">
-          {/* Para DELIVERY, solo mostrar el link (no QR) */}
-          {orderData?.mesa === "DELIVERY" || orderData?.mercadopagoOption === "link" ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
-                <div className="flex items-center justify-center mb-4">
-                  <svg className="w-16 h-16 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                  Link de Pago Mercado Pago
-                </h3>
-                <p className="text-sm text-blue-600 mb-4">
-                  Comparte este link con el cliente para que pueda pagar
-                </p>
-                {paymentData?.initPoint && (
-                  <div className="bg-white p-3 rounded border border-blue-200 mb-4">
-                    <p className="text-xs text-gray-600 break-all font-mono">
-                      {paymentData.initPoint}
-                    </p>
-                  </div>
-                )}
-                
-                {/* Botón para enviar por WhatsApp - solo para DELIVERY */}
-                {orderData?.mesa === "DELIVERY" && (
-                  <button
-                    onClick={handleSendWhatsApp}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg px-4 py-3 font-semibold transition-colors flex items-center justify-center space-x-2 mt-4"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.29 1.262.448 1.694.577.712.213 1.36.18 1.871.11.571-.075 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .96 4.525.96 10.08c0 1.792.413 3.476 1.147 4.996L0 24l9.075-2.102a11.852 11.852 0 005.03 1.08h.005c6.554 0 11.088-5.524 11.088-11.078 0-3.192-1.263-6.136-3.497-8.298" />
-                    </svg>
-                    <span>Enviar por WhatsApp</span>
-                  </button>
-                )}
-              </div>
+          {isLoading ? (
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+              <p className="text-gray-600">Generando código QR...</p>
             </div>
-          ) : (
-            <>
-              {isLoading ? (
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-                  <p className="text-gray-600">Generando código QR...</p>
-                </div>
-              ) : error ? (
-                <div className="text-red-600">
-                  <p>{error}</p>
-                  <button
-                    onClick={generateQRCode}
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Reintentar
-                  </button>
+          ) : error ? (
+            <div className="text-red-600">
+              <p>{error}</p>
+              <button
+                onClick={generateQRCode}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Reintentar
+              </button>
 
-                  {/* Fallback: Mostrar URL si el QR falla */}
-                  {paymentData?.initPoint && (
-                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800 mb-2">
-                        <strong>Alternativa:</strong> Puedes usar este enlace
-                        directo:
-                      </p>
-                      <div className="bg-white p-2 rounded border text-xs break-all">
-                        {paymentData.initPoint}
-                      </div>
-                      <button
-                        onClick={handleOpenInNewTab}
-                        className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
-                      >
-                        Abrir en Nueva Pestaña
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-                    <img
-                      src={qrCode}
-                      alt="Código QR para pago"
-                      className="w-64 h-64"
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Escanea este código QR con tu celular para pagar
+              {/* Fallback: Mostrar URL si el QR falla */}
+              {paymentData?.initPoint && (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 mb-2">
+                    <strong>Alternativa:</strong> Puedes usar este enlace
+                    directo:
                   </p>
+                  <div className="bg-white p-2 rounded border text-xs break-all">
+                    {paymentData.initPoint}
+                  </div>
+                  <button
+                    onClick={handleOpenInNewTab}
+                    className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+                  >
+                    Abrir en Nueva Pestaña
+                  </button>
                 </div>
               )}
-            </>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+                <img
+                  src={qrCode}
+                  alt="Código QR para pago"
+                  className="w-64 h-64"
+                />
+              </div>
+              <p className="text-sm text-gray-600">
+                Escanea este código QR con tu celular para pagar
+              </p>
+            </div>
           )}
         </div>
 

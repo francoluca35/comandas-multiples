@@ -110,6 +110,27 @@ export const RoleProvider = ({ children }) => {
           alwaysHasTurnoOpen: true,
         };
 
+      case "repartidor":
+        return {
+          ...basePermissions,
+          // REPARTIDOR: Solo acceso al sistema de repartidores (fuera de home-comandas)
+          canAccessHome: false, // No accede al home normal, tiene su propio dashboard
+          canAccessVentas: false,
+          canAccessMesas: false,
+          canAccessProductos: false,
+          canAccessPagos: false,
+          canAccessInventario: false,
+          canAccessReportes: false,
+          canAccessPromociones: false,
+          canAccessCocina: false,
+          canAccessConfiguracion: false,
+          // Sin permisos administrativos
+          canManageUsers: false,
+          canManageRestaurant: false,
+          canViewAllData: false,
+          canConfigZones: false,
+        };
+
       default:
         // Rol no reconocido, sin permisos
         return {
@@ -172,6 +193,13 @@ export const RoleProvider = ({ children }) => {
         bgColor: "bg-green-500/20",
         borderColor: "border-green-500/30",
       },
+      repartidor: {
+        name: "Repartidor",
+        description: "Sistema de entregas y delivery",
+        color: "text-yellow-400",
+        bgColor: "bg-yellow-500/20",
+        borderColor: "border-yellow-500/30",
+      },
     };
 
     return (
@@ -193,6 +221,7 @@ export const RoleProvider = ({ children }) => {
     isUsuario: rol?.toLowerCase() === "usuario",
     isMesero: rol?.toLowerCase() === "mesero" || rol?.toLowerCase() === "mesera",
     isCocina: rol?.toLowerCase() === "cocina",
+    isRepartidor: rol?.toLowerCase() === "repartidor",
   };
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
