@@ -38,6 +38,8 @@ export const RoleProvider = ({ children }) => {
           canManageUsers: true,
           canManageRestaurant: true,
           canViewAllData: true,
+          // Configurar zonas
+          canConfigZones: true,
         };
 
       case "usuario":
@@ -58,35 +60,18 @@ export const RoleProvider = ({ children }) => {
           canManageUsers: false,
           canManageRestaurant: false,
           canViewAllData: false,
+          canConfigZones: false,
         };
 
       case "mesero":
+      case "mesera":
         return {
           ...basePermissions,
-          // MESERO: Solo home (dashboard), turno y ventas
+          // MESERO/MESERA: Home limitado (solo turno y mensaje), ventas, salón (todo menos configurar zonas), cocina
           canAccessHome: true,
+          canAccessHomeLimited: true, // Solo turno y mensaje en home
           canAccessVentas: true,
-          canAccessMesas: false,
-          canAccessProductos: false,
-          canAccessPagos: false,
-          canAccessInventario: false,
-          canAccessReportes: false,
-          canAccessPromociones: false,
-          canAccessCocina: false,
-          canAccessConfiguracion: false,
-          // Sin permisos administrativos
-          canManageUsers: false,
-          canManageRestaurant: false,
-          canViewAllData: false,
-        };
-
-      case "cocina":
-        return {
-          ...basePermissions,
-          // COCINA: Solo home, ventas y vista de cocina
-          canAccessHome: true,
-          canAccessVentas: false,
-          canAccessMesas: false,
+          canAccessMesas: false, // No puede gestionar mesas, pero puede usar ventas/salón
           canAccessProductos: false,
           canAccessPagos: false,
           canAccessInventario: false,
@@ -98,6 +83,31 @@ export const RoleProvider = ({ children }) => {
           canManageUsers: false,
           canManageRestaurant: false,
           canViewAllData: false,
+          // No puede configurar zonas
+          canConfigZones: false,
+        };
+
+      case "cocina":
+        return {
+          ...basePermissions,
+          // COCINA: Solo acceso a cocina, siempre tiene turno abierto
+          canAccessHome: false, // No accede a home, va directo a cocina
+          canAccessVentas: false,
+          canAccessMesas: false,
+          canAccessProductos: false,
+          canAccessPagos: false,
+          canAccessInventario: false,
+          canAccessReportes: false,
+          canAccessPromociones: false,
+          canAccessCocina: true, // Solo acceso a cocina
+          canAccessConfiguracion: false,
+          // Sin permisos administrativos
+          canManageUsers: false,
+          canManageRestaurant: false,
+          canViewAllData: false,
+          canConfigZones: false,
+          // El rol cocina siempre tiene turno abierto (no necesita gestionar turno)
+          alwaysHasTurnoOpen: true,
         };
 
       default:
@@ -105,6 +115,7 @@ export const RoleProvider = ({ children }) => {
         return {
           ...basePermissions,
           canAccessHome: false,
+          canAccessHomeLimited: false,
           canAccessVentas: false,
           canAccessMesas: false,
           canAccessProductos: false,
@@ -117,6 +128,7 @@ export const RoleProvider = ({ children }) => {
           canManageUsers: false,
           canManageRestaurant: false,
           canViewAllData: false,
+          canConfigZones: false,
         };
     }
   }, [rol]);
@@ -141,14 +153,21 @@ export const RoleProvider = ({ children }) => {
       },
       mesero: {
         name: "Mesero",
-        description: "Acceso a ventas y dashboard",
+        description: "Acceso a ventas, salón y cocina",
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/20",
+        borderColor: "border-blue-500/30",
+      },
+      mesera: {
+        name: "Mesera",
+        description: "Acceso a ventas, salón y cocina",
         color: "text-blue-400",
         bgColor: "bg-blue-500/20",
         borderColor: "border-blue-500/30",
       },
       cocina: {
         name: "Cocina",
-        description: "Acceso a ventas y dashboard",
+        description: "Solo vista de cocina - turno siempre abierto",
         color: "text-green-400",
         bgColor: "bg-green-500/20",
         borderColor: "border-green-500/30",
@@ -172,7 +191,7 @@ export const RoleProvider = ({ children }) => {
     currentRole: rol,
     isAdmin: rol?.toLowerCase() === "admin",
     isUsuario: rol?.toLowerCase() === "usuario",
-    isMesero: rol?.toLowerCase() === "mesero",
+    isMesero: rol?.toLowerCase() === "mesero" || rol?.toLowerCase() === "mesera",
     isCocina: rol?.toLowerCase() === "cocina",
   };
 

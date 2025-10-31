@@ -6,6 +6,7 @@ import Sidebar, {
 } from "../home/components/Sidebar";
 import { RestaurantGuard } from "../../../components/RestaurantGuard";
 import RoleGuard from "../../../components/RoleGuard";
+import { useRole } from "../../../app/context/RoleContext";
 import usePedidosCocina from "../../../hooks/usePedidosCocina";
 import useKitchenNotifications from "../../../hooks/useKitchenNotifications";
 import useRealTimeNotifications from "../../../hooks/useRealTimeNotifications";
@@ -299,6 +300,7 @@ const PedidoCard = ({ pedido, onStatusChange, tipo }) => {
 // Componente principal de la página de cocina
 function CocinaContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
+  const { isCocina, isAdmin } = useRole();
   const {
     pedidos,
     loading,
@@ -311,6 +313,9 @@ function CocinaContent() {
     getPedidosListos,
     eliminarPedido,
   } = usePedidosCocina();
+  
+  // Para rol cocina, no mostrar sidebar (pantalla completa)
+  const mostrarSidebar = !isCocina || isAdmin;
 
   // Hook para notificaciones de cocina
   const {
@@ -423,9 +428,9 @@ function CocinaContent() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-slate-900 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+      <div className={`flex h-screen bg-slate-900 overflow-hidden ${!mostrarSidebar ? "w-full" : ""}`}>
+        {mostrarSidebar && <Sidebar />}
+        <div className={`flex-1 flex items-center justify-center ${!mostrarSidebar ? "w-full" : ""}`}>
           <div className="text-white text-xl">Cargando pedidos...</div>
         </div>
       </div>
@@ -434,9 +439,9 @@ function CocinaContent() {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-slate-900 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+      <div className={`flex h-screen bg-slate-900 overflow-hidden ${!mostrarSidebar ? "w-full" : ""}`}>
+        {mostrarSidebar && <Sidebar />}
+        <div className={`flex-1 flex items-center justify-center ${!mostrarSidebar ? "w-full" : ""}`}>
           <div className="text-red-400 text-xl">Error: {error}</div>
         </div>
       </div>
@@ -444,11 +449,11 @@ function CocinaContent() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-900 overflow-hidden">
-      <Sidebar />
+    <div className={`flex h-screen bg-slate-900 overflow-hidden ${!mostrarSidebar ? "w-full" : ""}`}>
+      {mostrarSidebar && <Sidebar />}
 
-      {/* Overlay para cerrar sidebar cuando está abierto */}
-      {isExpanded && (
+      {/* Overlay para cerrar sidebar cuando está abierto - solo si hay sidebar */}
+      {mostrarSidebar && isExpanded && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
           onClick={toggleSidebar}
@@ -458,7 +463,9 @@ function CocinaContent() {
       {/* Main Content */}
       <div
         className={`flex-1 transition-all duration-300 overflow-auto ${
-          isExpanded
+          !mostrarSidebar
+            ? "w-full"
+            : isExpanded
             ? "ml-56 sm:ml-64 md:ml-72 lg:ml-80 xl:ml-96 2xl:ml-[420px]"
             : "ml-16 sm:ml-20"
         }`}
@@ -468,6 +475,39 @@ function CocinaContent() {
             <div className="max-w-6xl mx-auto">
               {/* Header */}
               <div className="text-center mb-8">
+                {/* Botón de logout solo para rol cocina (sin sidebar) */}
+                {!mostrarSidebar && (
+                  <div className="flex justify-end mb-4">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const restauranteId = localStorage.getItem("restauranteId");
+                          const userId = localStorage.getItem("usuario");
+                          if (restauranteId && userId) {
+                            // Actualizar estado offline (si hay hook disponible)
+                          }
+                          // Limpiar datos de sesión
+                          localStorage.removeItem("usuario");
+                          localStorage.removeItem("rol");
+                          localStorage.removeItem("usuarioId");
+                          localStorage.removeItem("userImage");
+                          localStorage.removeItem("imagen");
+                          // Redirigir al login
+                          window.location.href = "/home-comandas/login";
+                        } catch (error) {
+                          console.error("Error al cerrar sesión:", error);
+                          window.location.href = "/home-comandas/login";
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Cerrar Sesión</span>
+                    </button>
+                  </div>
+                )}
                 <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
                   🍳 Vista de Cocina
                 </h1>

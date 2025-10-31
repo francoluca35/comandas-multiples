@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useTables } from "../../../../hooks/useTables";
+import { useRole } from "../../../../app/context/RoleContext";
 import MesasHeader from "./MesasHeader";
 import MesasGrid from "./MesasGrid";
 import AddTableModal from "./AddTableModal";
@@ -29,6 +30,7 @@ function MesasManagement() {
     reorderAllTablesAfterDelete,
     verifyAndFixTableStatus,
   } = useTables();
+  const { permissions } = useRole();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -224,7 +226,7 @@ function MesasManagement() {
           <MesasHeader
             onAddTable={() => setShowAddModal(true)}
             onVerifyStatus={handleVerifyStatus}
-            onConfigZones={() => setShowZoneConfig(true)}
+            onConfigZones={permissions?.canConfigZones ? () => setShowZoneConfig(true) : undefined}
           />
         </div>
       </div>

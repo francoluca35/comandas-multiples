@@ -12,7 +12,8 @@ function MesasHeader({ onAddTable, onVerifyStatus, onConfigZones }) {
         </p>
       </div>
       <div className="flex space-x-3">
-        {onConfigZones && (
+        {/* Botón de Configurar Zonas - solo visible si tiene permiso */}
+        {onConfigZones !== undefined && (
           <button
             onClick={onConfigZones}
             className="group relative inline-flex items-center px-4 py-3 overflow-hidden rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium shadow-lg hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-300 transform hover:scale-105"
