@@ -516,6 +516,43 @@ export default function DeliveryView() {
                     rows="3"
                 />
               </div>
+
+                {/* Método de Pago */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                    <div className="p-1.5 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded">
+                      <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
+                    <span>Método de pago</span>
+                </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { value: "efectivo", label: "Efectivo", icon: "💵", color: "green" },
+                      { value: "mercadopago", label: "Mercado Pago", icon: "📱", color: "purple" }
+                    ].map((method) => (
+                      <button
+                        key={method.value}
+                        onClick={() => setClientData(prev => ({ ...prev, mPago: method.value }))}
+                        className={`p-3 rounded-lg border-2 transition-all duration-300 ${
+                          clientData.mPago === method.value
+                            ? `border-${method.color}-500 bg-${method.color}-500/20 shadow-md`
+                            : 'border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700/80'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="text-xl mb-1">{method.icon}</div>
+                          <div className={`font-medium text-sm ${
+                            clientData.mPago === method.value ? 'text-white' : 'text-slate-300'
+                          }`}>
+                            {method.label}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
               </div>
@@ -524,28 +561,28 @@ export default function DeliveryView() {
 
       {/* Paso 3: Resumen del Pedido */}
       {showOrderSection && (
-        <div className="flex-1 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm flex flex-col shadow-2xl overflow-hidden">
+        <div className="flex-1 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm flex flex-col shadow-2xl">
           {/* Header del Resumen */}
-          <div className="p-3 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-900/50 flex-shrink-0">
+          <div className="p-8 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-900/50">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <button
                   onClick={handleBackToClientData}
-                  className="p-2 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white transition-all duration-300 rounded-lg"
+                  className="p-3 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white transition-all duration-300 rounded-xl hover:scale-105"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
                   <div>
-                    <h2 className="text-base font-bold text-white">Resumen del Pedido</h2>
-                    <p className="text-slate-400 text-xs">Revisa y confirma tu pedido</p>
+                    <h2 className="text-3xl font-bold text-white">Resumen del Pedido</h2>
+                    <p className="text-slate-400 text-sm">Revisa y confirma tu pedido</p>
                   </div>
                 </div>
                         </div>
@@ -553,87 +590,87 @@ export default function DeliveryView() {
                     </div>
 
           {/* Contenido del Resumen */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 p-8">
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Información del Cliente */}
-                <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur-sm rounded-lg p-4 border border-slate-600/50 shadow-xl">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/50 shadow-2xl">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                   </div>
-                    <h3 className="text-base font-bold text-white">Información del Cliente</h3>
+                    <h3 className="text-2xl font-bold text-white">Información del Cliente</h3>
                               </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="p-1.5 bg-blue-500/20 rounded">
-                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="space-y-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-blue-500/20 rounded-lg">
+                        <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                   </svg>
                       </div>
                       <div>
-                        <p className="text-slate-400 text-xs">Nombre</p>
-                        <p className="text-white font-semibold text-sm">{clientData.nombre}</p>
+                        <p className="text-slate-400 text-sm">Nombre</p>
+                        <p className="text-white font-bold text-lg">{clientData.nombre}</p>
                               </div>
                             </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="p-1.5 bg-green-500/20 rounded">
-                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-2 bg-green-500/20 rounded-lg">
+                        <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                 </div>
                         <div>
-                        <p className="text-slate-400 text-xs">WhatsApp</p>
-                        <p className="text-white font-semibold text-sm">{clientData.whatsapp || "No especificado"}</p>
+                        <p className="text-slate-400 text-sm">WhatsApp</p>
+                        <p className="text-white font-bold text-lg">{clientData.whatsapp || "No especificado"}</p>
                         </div>
                       </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="p-1.5 bg-purple-500/20 rounded mt-0.5">
-                        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start space-x-4">
+                      <div className="p-2 bg-purple-500/20 rounded-lg mt-1">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                   </div>
                       <div className="flex-1">
-                        <p className="text-slate-400 text-xs">Dirección</p>
-                        <p className="text-white font-semibold text-sm">{clientData.direccion}</p>
+                        <p className="text-slate-400 text-sm">Dirección</p>
+                        <p className="text-white font-bold text-lg">{clientData.direccion}</p>
         </div>
       </div>
           </div>
         </div>
 
                 {/* Productos del Pedido */}
-                <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur-sm rounded-lg p-4 border border-slate-600/50 shadow-xl">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gradient-to-br from-slate-700/80 to-slate-800/80 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/50 shadow-2xl">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
                       </svg>
                     </div>
-                    <h3 className="text-base font-bold text-white">Productos</h3>
+                    <h3 className="text-2xl font-bold text-white">Productos</h3>
                   </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-4 max-h-80 overflow-y-auto">
                           {selectedProducts.map((product) => (
-                      <div key={product.id} className="bg-slate-600/50 rounded-lg p-2 hover:bg-slate-600/70 transition-all duration-200">
+                      <div key={product.id} className="bg-slate-600/50 rounded-xl p-4 hover:bg-slate-600/70 transition-all duration-200">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h4 className="text-white font-semibold text-sm mb-1">{product.nombre}</h4>
-                            <div className="flex items-center space-x-2 text-xs">
+                            <h4 className="text-white font-bold text-lg mb-1">{product.nombre}</h4>
+                            <div className="flex items-center space-x-4 text-sm">
                               <span className="text-slate-300">
                                 ${(product.precio * (1 - product.descuento / 100)).toFixed(2)} c/u
                   </span>
                               <span className="text-slate-400">x{product.cantidad}</span>
                   {product.descuento > 0 && (
-                                <span className="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                                <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs font-semibold">
                       -{product.descuento}%
                     </span>
                   )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-bold text-sm">
+                            <p className="text-white font-bold text-xl">
                               ${(product.precio * (1 - product.descuento / 100) * product.cantidad).toFixed(2)}
                             </p>
                           </div>
@@ -645,25 +682,25 @@ export default function DeliveryView() {
       </div>
 
               {/* Total y Botón de Pago */}
-              <div className="mt-4 bg-gradient-to-r from-blue-600/20 to-blue-700/20 backdrop-blur-sm rounded-lg p-4 border border-blue-500/30 shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-8 bg-gradient-to-r from-blue-600/20 to-blue-700/20 backdrop-blur-sm rounded-2xl p-8 border border-blue-500/30 shadow-2xl">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                       </svg>
             </div>
               <div>
-                      <p className="text-blue-200 text-xs">Total a pagar</p>
-                      <p className="text-white font-bold text-xl">${calculateTotal().toFixed(2)}</p>
+                      <p className="text-blue-200 text-lg">Total a pagar</p>
+                      <p className="text-white font-bold text-4xl">${calculateTotal().toFixed(2)}</p>
           </div>
         </div>
                 </div>
                 <button
                   onClick={handleSubmitOrder}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg font-semibold transition-all duration-300 text-sm shadow-lg hover:shadow-xl transform hover:scale-100 flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 px-8 rounded-2xl font-bold transition-all duration-300 text-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 flex items-center justify-center space-x-3"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   <span>Procesar Pedido</span>

@@ -516,6 +516,43 @@ export default function DeliveryView() {
                     rows="3"
                 />
               </div>
+
+                {/* Método de Pago */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                    <div className="p-1.5 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded">
+                      <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
+                    <span>Método de pago</span>
+                </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { value: "efectivo", label: "Efectivo", icon: "💵", color: "green" },
+                      { value: "mercadopago", label: "Mercado Pago", icon: "📱", color: "purple" }
+                    ].map((method) => (
+                      <button
+                        key={method.value}
+                        onClick={() => setClientData(prev => ({ ...prev, mPago: method.value }))}
+                        className={`p-3 rounded-lg border-2 transition-all duration-300 ${
+                          clientData.mPago === method.value
+                            ? `border-${method.color}-500 bg-${method.color}-500/20 shadow-md`
+                            : 'border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700/80'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="text-xl mb-1">{method.icon}</div>
+                          <div className={`font-medium text-sm ${
+                            clientData.mPago === method.value ? 'text-white' : 'text-slate-300'
+                          }`}>
+                            {method.label}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
               </div>

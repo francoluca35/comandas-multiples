@@ -7,7 +7,7 @@ import { useBiometricAuth } from "../../../hooks/useBiometricAuth";
 import Swal from "sweetalert2";
 import BiometricSetupModal from "../../../components/BiometricSetupModal";
 
-function Login() {
+function RepartidorLogin() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [password, setPassword] = useState("");
   const [restauranteInfo, setRestauranteInfo] = useState(null);
@@ -33,12 +33,25 @@ function Login() {
     getLocalCredentials,
   } = useBiometricAuth();
 
+  // Filtrar solo usuarios con rol "repartidor" (case-insensitive)
+  const repartidores = usuarios.filter(user => {
+    const rolNormalizado = (user.rol || "").toLowerCase();
+    return rolNormalizado === "repartidor" && user.usuario !== "admin";
+  });
+
   useEffect(() => {
     const cargarRestauranteInfo = () => {
       const nombreResto = localStorage.getItem("nombreResto");
       const cantUsuarios = localStorage.getItem("cantUsuarios");
       const finanzas = localStorage.getItem("finanzas");
       const logo = localStorage.getItem("logo");
+      const restauranteId = localStorage.getItem("restauranteId");
+
+      if (!restauranteId || !nombreResto) {
+        // No hay restaurante activo, redirigir al prelogin
+        router.push("/comandas/prelogin");
+        return;
+      }
 
       if (nombreResto) {
         setRestauranteInfo({
@@ -51,8 +64,7 @@ function Login() {
     };
 
     cargarRestauranteInfo();
-  }, []);
-
+  }, [router]);
 
   const handleLogin = async () => {
     if (!usuarioSeleccionado) return;
@@ -187,9 +199,11 @@ function Login() {
     }
 
     // Guardar datos del usuario logueado
+    // Normalizar rol a minúsculas para consistencia
+    const rolNormalizado = (userData.rol || "").toLowerCase();
     localStorage.setItem("usuario", userData.usuario);
     localStorage.setItem("nombreCompleto", userData.nombreCompleto || userData.usuario);
-    localStorage.setItem("rol", userData.rol);
+    localStorage.setItem("rol", rolNormalizado);
     localStorage.setItem("usuarioId", userData.id);
     localStorage.setItem("userImage", userData.imagen || "");
     localStorage.setItem("imagen", userData.imagen || "");
@@ -199,7 +213,7 @@ function Login() {
     // Mostrar alerta personalizada con imagen y nombre
     await Swal.fire({
       title: `¡Bienvenido, ${userData.usuario}!`,
-      text: `Rol: ${userData.rol}`,
+      text: `Repartidor`,
       imageUrl:
         userData.imagen ||
         restauranteInfo?.logo ||
@@ -219,16 +233,9 @@ function Login() {
       console.log("🔄 Redirigiendo al sistema principal con recarga completa...");
       console.log("🛡️ Preservando credenciales biométricas durante la redirección");
       
-      // Verificar si es repartidor y redirigir a su dashboard
-      const rolNormalizado = (userData.rol || "").toLowerCase();
-      if (rolNormalizado === "repartidor") {
-        console.log("🚴 Repartidor detectado, redirigiendo a dashboard de repartidor...");
-        window.location.href = "/repartidor/dashboard";
-      } else {
-        // Usar window.location.href para forzar recarga completa
-        // Esto asegura que todos los contextos se inicialicen correctamente desde el localStorage
-        window.location.href = "/home-comandas/home";
-      }
+      // Redirigir a dashboard de repartidor
+      console.log("🚴 Repartidor detectado, redirigiendo a dashboard de repartidor...");
+      window.location.href = "/repartidor/dashboard";
     }, 100);
   };
 
@@ -288,7 +295,7 @@ function Login() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex justify-center items-center p-4">
-        <div className="text-white">Cargando usuarios...</div>
+        <div className="text-white">Cargando repartidores...</div>
       </div>
     );
   }
@@ -314,34 +321,32 @@ function Login() {
             {restauranteInfo?.nombre || "Restaurante"}
           </h1>
           <p className="text-white text-sm mt-1">
-            Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
+            Panel Repartidor
           </p>
         </div>
 
         {/* Lista de usuarios */}
-        {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
+        {repartidores.length > 0 ? (
           <div className="mb-6">
             <div className="flex flex-wrap gap-2 justify-center">
-              {usuarios
-                .filter(user => user.usuario !== "admin")
-                .map((user) => (
-                  <UserButton 
-                    key={user.id}
-                    user={user}
-                    isSelected={usuarioSeleccionado?.id === user.id}
-                    onSelect={() => {
-                      setUsuarioSeleccionado(user);
-                      setPassword("");
-                    }}
-                    getLocalCredentials={getLocalCredentials}
-                  />
-                ))}
+              {repartidores.map((user) => (
+                <UserButton 
+                  key={user.id}
+                  user={user}
+                  isSelected={usuarioSeleccionado?.id === user.id}
+                  onSelect={() => {
+                    setUsuarioSeleccionado(user);
+                    setPassword("");
+                  }}
+                  getLocalCredentials={getLocalCredentials}
+                />
+              ))}
             </div>
           </div>
         ) : (
           <div className="text-center mb-6">
             <p className="text-white text-lg mb-4">
-              No hay usuarios disponibles
+              No hay repartidores disponibles
             </p>
           </div>
         )}
@@ -521,4 +526,5 @@ const UserButton = ({ user, isSelected, onSelect, getLocalCredentials }) => {
   );
 };
 
-export default Login;
+export default RepartidorLogin;
+

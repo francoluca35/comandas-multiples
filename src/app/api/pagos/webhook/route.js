@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import mercadopago from "mercadopago";
 import { db } from "../../../../../lib/firebase";
-import { doc, updateDoc, collection, addDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, addDoc, getDoc, getDocs } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
 export async function POST(request) {
   try {
@@ -39,25 +40,76 @@ export async function POST(request) {
     const tempPayment = await mercadopago.payment.get(paymentId);
     const paymentData = tempPayment.response;
 
-    // Extraer información del restaurante
-    const restaurantId = paymentData.additional_info?.restaurant_id;
-    const restaurantName = paymentData.additional_info?.restaurant_name;
-    const orderTotal = paymentData.additional_info?.order_total;
+    // Extraer información del restaurante desde additional_info (que puede estar comprimido)
+    let restaurantId = null;
+    let restaurantName = null;
+    let orderTotal = paymentData.transaction_amount || 0;
+
+    // Intentar parsear additional_info (puede ser JSON string o objeto)
+    try {
+      let additionalInfo = paymentData.additional_info;
+      if (typeof additionalInfo === "string") {
+        additionalInfo = JSON.parse(additionalInfo);
+      }
+
+      // Si está comprimido con claves abreviadas, usar las abreviadas
+      if (additionalInfo.r) {
+        // Formato comprimido: r=restaurantId, n=nombre, t=total, m=mesa, c=cliente
+        restaurantId = additionalInfo.r;
+        restaurantName = additionalInfo.n || "Restaurante";
+        orderTotal = additionalInfo.t || orderTotal;
+      } else {
+        // Formato completo (fallback)
+        restaurantId = additionalInfo?.restaurant_id || additionalInfo?.restaurantId;
+        restaurantName = additionalInfo?.restaurant_name || additionalInfo?.restaurantName;
+        orderTotal = additionalInfo?.order_total || orderTotal;
+      }
+    } catch (parseError) {
+      console.warn("⚠️ Error parseando additional_info, intentando extraer del external_reference");
+      // Intentar extraer del external_reference si está disponible
+      const externalRef = paymentData.external_reference || "";
+      const match = externalRef.match(/^([^_]+)_/);
+      if (match) {
+        restaurantId = match[1];
+      }
+    }
 
     if (!restaurantId) {
-      console.error("No restaurant ID found in payment data");
+      console.error("❌ No restaurant ID found in payment data");
+      console.error("Payment data:", {
+        external_reference: paymentData.external_reference,
+        additional_info: paymentData.additional_info,
+      });
       return NextResponse.json(
         { error: "Restaurant ID not found" },
         { status: 400 }
       );
     }
 
-    // Obtener las credenciales del restaurante
-    const restaurantDoc = await getDoc(doc(db, "restaurantes", restaurantId));
-    const restaurantData = restaurantDoc.data();
+    console.log("🔍 Restaurante identificado:", { restaurantId, restaurantName, orderTotal });
 
-    if (!restaurantData?.mercadopago?.accessToken) {
-      console.error("Restaurant does not have Mercado Pago configured");
+    // Obtener las credenciales del restaurante desde Mpagos/configuracion
+    const mpagoConfigRef = doc(db, "restaurantes", restaurantId, "Mpagos", "configuracion");
+    const mpagoConfigDoc = await getDoc(mpagoConfigRef);
+    
+    let mercadopagoConfig = null;
+    
+    // Si existe en la subcolección, usar esos datos
+    if (mpagoConfigDoc.exists()) {
+      mercadopagoConfig = mpagoConfigDoc.data();
+      console.log("✅ Configuración encontrada en Mpagos/configuracion");
+    } else {
+      // Fallback: intentar obtener del documento principal del restaurante
+      const restaurantDoc = await getDoc(doc(db, "restaurantes", restaurantId));
+      const restaurantData = restaurantDoc.data();
+      if (restaurantData?.mercadopago) {
+        mercadopagoConfig = restaurantData.mercadopago;
+        console.log("✅ Configuración encontrada en documento principal");
+      }
+    }
+
+    if (!mercadopagoConfig || !mercadopagoConfig.accessToken) {
+      console.error("❌ Restaurant does not have Mercado Pago configured");
       return NextResponse.json(
         { error: "Restaurant not configured" },
         { status: 400 }
@@ -65,7 +117,7 @@ export async function POST(request) {
     }
 
     // Verificar webhook secret del restaurante
-    const webhookSecret = restaurantData.mercadopago?.webhookSecret;
+    const webhookSecret = mercadopagoConfig.webhookSecret;
     if (webhookSecret && signature) {
       // TODO: Implementar verificación de firma completa con el webhookSecret del restaurante
       console.log(
@@ -81,7 +133,7 @@ export async function POST(request) {
 
     // Configurar Mercado Pago con las credenciales del restaurante
     mercadopago.configure({
-      access_token: restaurantData.mercadopago.accessToken,
+      access_token: mercadopagoConfig.accessToken,
     });
 
     // Obtener el pago con las credenciales correctas

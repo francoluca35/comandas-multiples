@@ -171,8 +171,16 @@ function TurnoView() {
 
 function Home() {
   const { turnoAbierto } = useTurno();
-  const { isCocina } = useRole();
+  const { isCocina, isRepartidor } = useRole();
   const router = useRouter();
+
+  // Si es rol repartidor, redirigir directamente a su dashboard
+  useEffect(() => {
+    const rol = (localStorage.getItem("rol") || "").toLowerCase();
+    if (rol === "repartidor" || isRepartidor) {
+      router.push("/repartidor/dashboard");
+    }
+  }, [isRepartidor, router]);
 
   // Si es rol cocina, redirigir directamente a cocina
   useEffect(() => {
@@ -182,6 +190,19 @@ function Home() {
   }, [isCocina, router]);
 
   console.log("🏠 Home renderizando - turnoAbierto:", turnoAbierto);
+
+  // Si es repartidor, no renderizar nada (se redirige a dashboard de repartidor)
+  const rol = typeof window !== "undefined" ? (localStorage.getItem("rol") || "").toLowerCase() : "";
+  if (rol === "repartidor" || isRepartidor) {
+    return (
+      <div className="flex h-screen bg-[#1a1a1a] items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Redirigiendo a dashboard de repartidor...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Si es cocina, no renderizar nada (se redirige a cocina)
   if (isCocina) {
