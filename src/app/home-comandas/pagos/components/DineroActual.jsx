@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import VentasModal from "./VentasModal";
+import React, { useState, useMemo } from "react";
+import { useIngresos } from "@/hooks/useIngresos";
 import HistorialIngresosModal from "./HistorialIngresosModal";
 
 export default function DineroActual({ 
@@ -14,11 +14,65 @@ export default function DineroActual({
   getEfectivoTotal, 
   getVirtualTotal, 
   getVentasEfectivo, 
-  getVentasVirtual 
+  getVentasVirtual,
+  getEgresosEfectivo,
+  getEgresosVirtual
 }) {
   // Estados para los modales
-  const [showVentasModal, setShowVentasModal] = useState(false);
   const [showHistorialIngresosModal, setShowHistorialIngresosModal] = useState(false);
+  
+  // Hook para obtener ingresos
+  const { getIngresos, ingresos } = useIngresos();
+  
+  // Calcular ingresos por tipo (efectivo/virtual) - NETOS (ingresos menos egresos)
+  const resumenIngresos = useMemo(() => {
+    try {
+      let ingresoEfectivo = 0;
+      let ingresoVirtual = 0;
+
+      // Obtener todos los ingresos registrados
+      const todosLosIngresos = getIngresos();
+
+      // Calcular ingresos por tipo según la forma de ingreso registrada
+      todosLosIngresos.forEach((ingreso) => {
+        const monto = parseFloat(ingreso.monto) || 0;
+        
+        // Normalizar formaIngreso para comparación
+        const formaIngreso = (ingreso.formaIngreso || "").toLowerCase();
+
+        if (
+          ingreso.formaIngreso === "Efectivo" ||
+          ingreso.opcionPago === "caja"
+        ) {
+          ingresoEfectivo += monto;
+        } else if (
+          formaIngreso === "mercadopago" ||
+          formaIngreso === "mercado pago" ||
+          formaIngreso === "tarjeta" ||
+          formaIngreso === "transferencia" ||
+          ingreso.opcionPago === "cuenta_restaurante"
+        ) {
+          ingresoVirtual += monto;
+        }
+      });
+
+      // Obtener egresos
+      const egresosEfectivo = getEgresosEfectivo ? getEgresosEfectivo() : 0;
+      const egresosVirtual = getEgresosVirtual ? getEgresosVirtual() : 0;
+
+      // Calcular valores netos (ingresos - egresos)
+      const ingresoEfectivoNeto = ingresoEfectivo - egresosEfectivo;
+      const ingresoVirtualNeto = ingresoVirtual - egresosVirtual;
+
+      return { 
+        ingresoEfectivo: ingresoEfectivoNeto, 
+        ingresoVirtual: ingresoVirtualNeto 
+      };
+    } catch (error) {
+      console.error("❌ Error calculando resumen de ingresos:", error);
+      return { ingresoEfectivo: 0, ingresoVirtual: 0 };
+    }
+  }, [getIngresos, ingresos?.totalIngresos, ingresos?.ingresos?.length, getEgresosEfectivo, getEgresosVirtual]);
 
   // Función para obtener el total de cajas
   const getTotalCajas = () => {
@@ -126,124 +180,87 @@ export default function DineroActual({
       {/* Content - Conditionally visible */}
       {isExpanded && (
         <div className="space-y-4">
-          {/* Ventas en Efectivo */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-green-500/20 rounded-md flex items-center justify-center">
-                <svg
-                  className="w-4 h-4 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-white text-sm font-medium">Ventas en Efectivo</span>
-                <span className="text-xs text-slate-400">
-                  Salón + Takeaway + Delivery
-                </span>
-              </div>
-            </div>
-            <span className="text-lg font-bold text-green-400">
-              {formatDinero(getVentasEfectivo())}
-            </span>
-          </div>
-
-          {/* Ventas Virtuales */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-blue-500/20 rounded-md flex items-center justify-center">
-                <svg
-                  className="w-4 h-4 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-white text-sm font-medium">Ventas Virtuales</span>
-                <span className="text-xs text-slate-400">
-                  Tarjeta + MercadoPago
-                </span>
-              </div>
-            </div>
-            <span className="text-lg font-bold text-blue-400">
-              {formatDinero(getVentasVirtual())}
-            </span>
-          </div>
-
-          {/* Total de Ventas */}
-          <div className="pt-2 border-t border-slate-700/50">
+          {/* Ingresos en Efectivo */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-purple-500/20 rounded-md flex items-center justify-center">
-                  <svg
-                    className="w-4 h-4 text-purple-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                    />
-                  </svg>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-white text-sm font-medium">Total de Ventas</span>
-                  <span className="text-xs text-slate-400">
-                    Efectivo + Virtual
-                  </span>
-                </div>
+              <div className="flex items-center">
+                <svg
+                  className="w-5 h-5 text-green-400 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <span className="text-sm font-medium">Ingreso Efectivo</span>
+              </div>
+              <span className="text-sm font-bold text-green-400">
+                {formatDinero(resumenIngresos.ingresoEfectivo)}
+              </span>
+            </div>
+          </div>
+
+          {/* Ingresos Virtuales */}
+          <div className="bg-slate-700/30 rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <svg
+                  className="w-5 h-5 text-blue-400 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <span className="text-sm font-medium">Ingreso Virtual</span>
+              </div>
+              <span className="text-sm font-bold text-blue-400">
+                {formatDinero(resumenIngresos.ingresoVirtual)}
+              </span>
+            </div>
+          </div>
+
+          {/* Total de Ingresos */}
+          <div className="bg-gradient-to-r from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <svg
+                  className="w-6 h-6 text-purple-400 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                  />
+                </svg>
+                <span className="text-base font-semibold">Total de Ingresos</span>
               </div>
               <span className="text-xl font-bold text-purple-400">
-                {formatDinero(getVentasEfectivo() + getVentasVirtual())}
+                {formatDinero(resumenIngresos.ingresoEfectivo + resumenIngresos.ingresoVirtual)}
               </span>
             </div>
           </div>
 
           {/* Botones de Acción */}
           <div className="pt-4 border-t border-slate-700/50 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowVentasModal(true)}
-                className="bg-blue-500 text-white font-medium py-2 px-3 rounded-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center space-x-2"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                <span className="text-sm">Ventas</span>
-              </button>
-              
+            <div className="flex justify-center">
               <button
                 onClick={() => setShowHistorialIngresosModal(true)}
-                className="bg-slate-600 text-white font-medium py-2 px-3 rounded-lg hover:bg-slate-700 transition-all duration-300 flex items-center justify-center space-x-2"
+                className="bg-blue-500 text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-600 transition-all duration-300 flex items-center justify-center space-x-2"
               >
                 <svg
                   className="w-4 h-4"
@@ -266,11 +283,6 @@ export default function DineroActual({
       )}
 
       {/* Modales */}
-      <VentasModal
-        isOpen={showVentasModal}
-        onClose={() => setShowVentasModal(false)}
-      />
-
       <HistorialIngresosModal
         isOpen={showHistorialIngresosModal}
         onClose={() => setShowHistorialIngresosModal(false)}

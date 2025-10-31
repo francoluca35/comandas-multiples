@@ -102,6 +102,8 @@ function PagosContent() {
                   getVirtualTotal={getVirtualTotal}
                   getVentasEfectivo={getVentasEfectivo}
                   getVentasVirtual={getVentasVirtual}
+                  getEgresosEfectivo={getEgresosEfectivo}
+                  getEgresosVirtual={getEgresosVirtual}
                 />
               </div>
 

@@ -66,15 +66,19 @@ export async function GET(request) {
       ))
     ]);
 
-    // Calcular dinero actual (efectivo) - Solo contar cajas, no sumar apertura
-    let efectivoTotal = 0; // El efectivo real viene de las ventas, no de la apertura
+    // Calcular dinero actual (efectivo) - Sumar apertura de todas las cajas
+    let efectivoTotal = 0;
     let totalCajas = 0;
     let ultimaActualizacion = null;
 
     cajaSnapshot.forEach((doc) => {
       const cajaData = doc.data();
-      // Solo contar las cajas, no sumar el campo Apertura (que es inútil)
       totalCajas++;
+      
+      // Sumar el campo Apertura (dinero en efectivo de la caja)
+      if (cajaData.Apertura && !isNaN(parseFloat(cajaData.Apertura))) {
+        efectivoTotal += parseFloat(cajaData.Apertura);
+      }
       
       if (cajaData.ultimaActualizacion && 
           (!ultimaActualizacion || cajaData.ultimaActualizacion > ultimaActualizacion)) {
@@ -182,7 +186,7 @@ export async function GET(request) {
       }
     });
 
-    // Si no hay ventas directas, usar ingresos relacionados con ventas
+    // Si no hay ventas directas, usar ingresos relacionados con ventas como fallback
     if (ventasEfectivo === 0 && ventasVirtual === 0) {
       // Procesar ingresos que son realmente ventas
       ingresosSnapshot.forEach((doc) => {

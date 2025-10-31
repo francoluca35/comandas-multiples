@@ -69,9 +69,32 @@ function HistorialIngresosModal({ isOpen, onClose }) {
     }).format(amount || 0);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
+  const formatDate = (dateInput) => {
+    if (!dateInput) return "N/A";
+    
+    let date;
+    
+    // Si es un objeto con el método toDate (Firestore Timestamp)
+    if (dateInput && typeof dateInput.toDate === 'function') {
+      date = dateInput.toDate();
+    } else if (dateInput && dateInput.seconds) {
+      // Si tiene el campo seconds (Firestore Timestamp serializado)
+      date = new Date(dateInput.seconds * 1000);
+    } else if (typeof dateInput === 'string') {
+      // Si es un string
+      date = new Date(dateInput);
+    } else if (dateInput instanceof Date) {
+      // Si ya es un Date
+      date = dateInput;
+    } else {
+      return "N/A";
+    }
+    
+    // Verificar que la fecha sea válida
+    if (isNaN(date.getTime())) {
+      return "N/A";
+    }
+    
     return date.toLocaleDateString("es-AR", {
       day: "2-digit",
       month: "2-digit",
@@ -111,12 +134,31 @@ function HistorialIngresosModal({ isOpen, onClose }) {
     // Ingresos
     if (Array.isArray(historial.ingresos)) {
       historial.ingresos.forEach((ingreso) => {
+        // Determinar categoría según formaIngreso y opcionPago
+        let categoria = "Efectivo";
+        const formaIngreso = (ingreso.formaIngreso || "").toLowerCase();
+        const opcionPago = ingreso.opcionPago || "";
+        
+        if (
+          ingreso.formaIngreso === "Efectivo" ||
+          opcionPago === "caja"
+        ) {
+          categoria = "Efectivo";
+        } else if (
+          formaIngreso === "mercadopago" ||
+          formaIngreso === "mercado pago" ||
+          formaIngreso === "tarjeta" ||
+          formaIngreso === "transferencia" ||
+          opcionPago === "cuenta_restaurante"
+        ) {
+          categoria = "Virtual";
+        }
+        
         todosLosDatos.push({
           ...ingreso,
           tipo: "Ingreso",
           fecha: ingreso.fecha || ingreso.timestamp,
-          categoria:
-            ingreso.formaIngreso === "virtual" ? "Virtual" : "Efectivo",
+          categoria: categoria,
           descripcion: ingreso.motivo || ingreso.tipoIngreso || "Ingreso",
           monto: ingreso.monto || 0,
         });
@@ -131,11 +173,28 @@ function HistorialIngresosModal({ isOpen, onClose }) {
           typeof venta.historialVentas === "object"
         ) {
           Object.entries(venta.historialVentas).forEach(([fecha, data]) => {
+            // Determinar categoría según metodoPago
+            let categoria = "Efectivo";
+            const metodoPago = (data.metodoPago || "").toLowerCase();
+            
+            if (metodoPago === "efectivo" || metodoPago === "cash") {
+              categoria = "Efectivo";
+            } else if (
+              metodoPago === "virtual" ||
+              metodoPago === "mercadopago" ||
+              metodoPago === "mercado pago" ||
+              metodoPago === "tarjeta" ||
+              metodoPago === "transferencia" ||
+              metodoPago === "qr"
+            ) {
+              categoria = "Virtual";
+            }
+            
             todosLosDatos.push({
               ...data,
               tipo: "Venta",
               fecha: fecha,
-              categoria: data.metodoPago === "virtual" ? "Virtual" : "Efectivo",
+              categoria: categoria,
               descripcion: `Venta - ${data.productos || "Productos"}`,
               monto: data.total || 0,
             });
@@ -149,11 +208,28 @@ function HistorialIngresosModal({ isOpen, onClose }) {
       historial.otros.forEach((otro) => {
         if (otro.historialOtros && typeof otro.historialOtros === "object") {
           Object.entries(otro.historialOtros).forEach(([fecha, data]) => {
+            // Determinar categoría según metodoPago
+            let categoria = "Efectivo";
+            const metodoPago = (data.metodoPago || "").toLowerCase();
+            
+            if (metodoPago === "efectivo" || metodoPago === "cash") {
+              categoria = "Efectivo";
+            } else if (
+              metodoPago === "virtual" ||
+              metodoPago === "mercadopago" ||
+              metodoPago === "mercado pago" ||
+              metodoPago === "tarjeta" ||
+              metodoPago === "transferencia" ||
+              metodoPago === "qr"
+            ) {
+              categoria = "Virtual";
+            }
+            
             todosLosDatos.push({
               ...data,
               tipo: "Otro",
               fecha: fecha,
-              categoria: data.metodoPago === "virtual" ? "Virtual" : "Efectivo",
+              categoria: categoria,
               descripcion: data.motivo || "Otro ingreso",
               monto: data.monto || 0,
             });
@@ -171,12 +247,28 @@ function HistorialIngresosModal({ isOpen, onClose }) {
         ) {
           Object.entries(deposito.historialDepositos).forEach(
             ([fecha, data]) => {
+              // Determinar categoría según metodoPago
+              let categoria = "Efectivo";
+              const metodoPago = (data.metodoPago || "").toLowerCase();
+              
+              if (metodoPago === "efectivo" || metodoPago === "cash") {
+                categoria = "Efectivo";
+              } else if (
+                metodoPago === "virtual" ||
+                metodoPago === "mercadopago" ||
+                metodoPago === "mercado pago" ||
+                metodoPago === "tarjeta" ||
+                metodoPago === "transferencia" ||
+                metodoPago === "qr"
+              ) {
+                categoria = "Virtual";
+              }
+              
               todosLosDatos.push({
                 ...data,
                 tipo: "Depósito",
                 fecha: fecha,
-                categoria:
-                  data.metodoPago === "virtual" ? "Virtual" : "Efectivo",
+                categoria: categoria,
                 descripcion: data.motivo || "Depósito",
                 monto: data.monto || 0,
               });
