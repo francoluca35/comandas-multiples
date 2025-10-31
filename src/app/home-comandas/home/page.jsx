@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar, { useSidebar, SidebarProvider } from "./components/Sidebar";
 
 import TurnoCard from "./components/TurnoCerradoCard";
@@ -20,7 +21,7 @@ import StockLowAlert from "../../../components/StockLowAlert";
 function DashboardContent() {
   const { isExpanded, toggleSidebar } = useSidebar();
   const { turnoInfo } = useTurno();
-  const { permissions, isAdmin } = useRole();
+  const { permissions, isAdmin, isMesero } = useRole();
   
   // Hook para notificaciones de pedidos listos
   const {
@@ -90,8 +91,20 @@ function DashboardContent() {
                 <DispositivosCard />
               </div>
             </div>
+          ) : isMesero && permissions?.canAccessHomeLimited ? (
+            // Dashboard limitado para MESERA: solo turno y mensaje
+            <div className="flex items-center justify-center min-h-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 max-w-4xl w-full">
+                <div className="min-h-[300px]">
+                  <TurnoCard />
+                </div>
+                <div className="min-h-[300px]">
+                  <DispositivosCard />
+                </div>
+              </div>
+            </div>
           ) : (
-            // Dashboard limitado para MESERO, COCINA y USUARIO
+            // Dashboard limitado para COCINA y USUARIO
             <div className="flex items-center justify-center min-h-full">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 max-w-4xl w-full">
                 <div className="min-h-[300px]">
@@ -158,8 +171,29 @@ function TurnoView() {
 
 function Home() {
   const { turnoAbierto } = useTurno();
+  const { isCocina } = useRole();
+  const router = useRouter();
+
+  // Si es rol cocina, redirigir directamente a cocina
+  useEffect(() => {
+    if (isCocina) {
+      router.push("/home-comandas/cocina");
+    }
+  }, [isCocina, router]);
 
   console.log("🏠 Home renderizando - turnoAbierto:", turnoAbierto);
+
+  // Si es cocina, no renderizar nada (se redirige a cocina)
+  if (isCocina) {
+    return (
+      <div className="flex h-screen bg-[#1a1a1a] items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Redirigiendo a cocina...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

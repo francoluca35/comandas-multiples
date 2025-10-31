@@ -10,12 +10,47 @@ export const TurnoProvider = ({ children }) => {
   const [turnoInfo, setTurnoInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const { usuario } = useAuth();
+  
+  // Obtener rol para verificar si es cocina (siempre tiene turno abierto)
+  const getCurrentRole = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("rol");
+    }
+    return null;
+  };
 
   // Cargar estado del turno desde localStorage al inicializar
   useEffect(() => {
     const cargarTurno = () => {
       if (typeof window !== "undefined") {
         try {
+          const rolActual = getCurrentRole();
+          
+          // Si el rol es cocina, siempre tiene turno abierto
+          if (rolActual?.toLowerCase() === "cocina") {
+            const usuarioLocal = localStorage.getItem("usuario");
+            const nombreCompleto = localStorage.getItem("nombreCompleto");
+            const restauranteId = localStorage.getItem("restauranteId");
+            
+            setTurnoInfo({
+              abierto: true,
+              usuario: nombreCompleto || usuarioLocal || "Cocina",
+              horaApertura: new Date().toLocaleString("es-ES", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              timestamp: Date.now(),
+              restauranteId: restauranteId || null,
+            });
+            setTurnoAbierto(true);
+            setLoading(false);
+            return;
+          }
+          
+          // Para otros roles, cargar turno normalmente
           const turnoGuardado = localStorage.getItem("turnoInfo");
           if (turnoGuardado) {
             const turnoData = JSON.parse(turnoGuardado);
@@ -50,6 +85,12 @@ export const TurnoProvider = ({ children }) => {
   }, []);
 
   const abrirTurno = () => {
+    // Si es cocina, siempre tiene turno abierto, no necesita abrir turno
+    const rolActual = getCurrentRole();
+    if (rolActual?.toLowerCase() === "cocina") {
+      return true;
+    }
+    
     // Obtener usuario directamente del localStorage para evitar problemas de sincronización
     const usuarioLocal = localStorage.getItem("usuario");
     const nombreCompleto = localStorage.getItem("nombreCompleto");
@@ -94,6 +135,13 @@ export const TurnoProvider = ({ children }) => {
   };
 
   const cerrarTurno = () => {
+    // Si es cocina, no puede cerrar turno (siempre está abierto)
+    const rolActual = getCurrentRole();
+    if (rolActual?.toLowerCase() === "cocina") {
+      console.log("El rol cocina no puede cerrar turno (siempre está abierto)");
+      return true; // Retornamos true porque técnicamente el turno siempre está "abierto" para cocina
+    }
+    
     if (!turnoInfo) {
       console.error("No hay información de turno para cerrar");
       return false;
