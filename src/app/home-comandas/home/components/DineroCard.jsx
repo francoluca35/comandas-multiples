@@ -2,18 +2,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useIngresos } from "@/hooks/useIngresos";
 import { useDineroActual } from "@/hooks/useDineroActual";
-import { useAlivios } from "@/hooks/useAlivios";
-import { useInversionTotal } from "@/hooks/useInversionTotal";
-import { useSueldos } from "@/hooks/useSueldos";
 import { usePagosOptimizado } from "@/hooks/usePagosOptimizado";
 
 function DineroCard() {
   const { getTotalIngresos, getIngresos, ingresos } = useIngresos();
-  const { getEfectivoTotal, getVirtualTotal, formatDinero, dineroActual } =
-    useDineroActual();
-  const { getTotalAlivios, alivios } = useAlivios();
-  const { getInversionTotal, inversionTotal } = useInversionTotal();
-  const { getTotalSueldos, sueldos } = useSueldos();
+  const { formatDinero, dineroActual } = useDineroActual();
   const { getEgresosEfectivo, getEgresosVirtual } = usePagosOptimizado();
 
   // Calcular resumen de ingresos y egresos usando useMemo
@@ -21,13 +14,6 @@ function DineroCard() {
     try {
       // Obtener ingresos totales
       const totalIngresos = getTotalIngresos() || 0;
-      const efectivoTotal = getEfectivoTotal() || 0;
-      const virtualTotal = getVirtualTotal() || 0;
-
-      // Obtener egresos totales (estos son valores, no funciones)
-      const totalAlivios = getTotalAlivios || 0;
-      const totalInversion = getInversionTotal || 0;
-      const totalSueldos = getTotalSueldos || 0;
 
       // Calcular ingresos por tipo basándose en los datos reales registrados
       let ingresoEfectivo = 0;
@@ -64,19 +50,24 @@ function DineroCard() {
       const egresosEfectivoRegistrados = getEgresosEfectivo() || 0;
       const egresosVirtualRegistrados = getEgresosVirtual() || 0;
       
-      // Sumar alivios (principalmente en efectivo)
-      const egresoEfectivo = totalAlivios + egresosEfectivoRegistrados;
-      // Sumar inversión, sueldos y egresos virtuales registrados
-      const egresoVirtual = totalInversion + totalSueldos + egresosVirtualRegistrados;
+      // Calcular egresos totales
+      const egresoEfectivo = egresosEfectivoRegistrados;
+      const egresoVirtual = egresosVirtualRegistrados;
+
+      // Calcular valores NETOS (ingresos - egresos)
+      const ingresoEfectivoNeto = ingresoEfectivo - egresoEfectivo;
+      const ingresoVirtualNeto = ingresoVirtual - egresoVirtual;
 
       const resultado = {
-        ingresoEfectivo,
-        ingresoVirtual,
+        ingresoEfectivo: ingresoEfectivoNeto,
+        ingresoVirtual: ingresoVirtualNeto,
         egresoEfectivo,
         egresoVirtual,
       };
 
-      console.log("💰 Resumen calculado:", {
+      console.log("💰 Resumen calculado (NETO):", {
+        ingresoEfectivoBruto: ingresoEfectivo,
+        ingresoVirtualBruto: ingresoVirtual,
         ...resultado,
         totalIngresos,
       });
@@ -97,11 +88,6 @@ function DineroCard() {
     ingresos?.ingresos?.length, // Agregar dependencia de ingresos
     dineroActual?.efectivo,
     dineroActual?.virtual,
-    alivios?.totalAlivios,
-    alivios?.alivios?.length,
-    inversionTotal?.inversionTotal,
-    inversionTotal?.productos?.length,
-    sueldos?.length,
     getEgresosEfectivo,
     getEgresosVirtual,
   ]);
@@ -234,25 +220,13 @@ function DineroCard() {
         </div>
       </div>
 
-      {/* Botones de acción */}
-      <div className="grid grid-cols-3 gap-1 sm:gap-2">
+      {/* Botón de acción */}
+      <div className="flex justify-center">
         <button
           onClick={() => handleNavigation("pagos")}
-          className="bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200"
+          className="bg-gray-600 hover:bg-gray-700 rounded-lg px-6 py-2 text-sm font-medium transition-colors duration-200 w-full"
         >
-          Egresar
-        </button>
-        <button
-          onClick={() => handleNavigation("pagos")}
-          className="bg-green-600 hover:bg-green-700 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200"
-        >
-          Ingresar
-        </button>
-        <button
-          onClick={() => handleNavigation("pagos")}
-          className="bg-gray-600 hover:bg-gray-700 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200"
-        >
-          Menú
+          Ver historial completo
         </button>
       </div>
     </div>

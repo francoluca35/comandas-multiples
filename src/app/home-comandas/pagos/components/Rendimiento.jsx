@@ -1,11 +1,61 @@
 "use client";
 import React, { useMemo, memo } from "react";
+import { useIngresos } from "@/hooks/useIngresos";
 
 function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTotal, getVirtualTotal, getTotalIngresos, getTotalEgresos, getVentasEfectivo, getVentasVirtual }) {
+
+  // Hook para obtener ingresos
+  const { getIngresos, ingresos } = useIngresos();
+
+  // Calcular ingresos por tipo (efectivo/virtual)
+  const resumenIngresos = useMemo(() => {
+    try {
+      let ingresoEfectivo = 0;
+      let ingresoVirtual = 0;
+
+      // Obtener todos los ingresos registrados
+      const todosLosIngresos = getIngresos();
+
+      // Calcular ingresos por tipo según la forma de ingreso registrada
+      todosLosIngresos.forEach((ingreso) => {
+        const monto = parseFloat(ingreso.monto) || 0;
+        
+        // Normalizar formaIngreso para comparación
+        const formaIngreso = (ingreso.formaIngreso || "").toLowerCase();
+
+        if (
+          ingreso.formaIngreso === "Efectivo" ||
+          ingreso.opcionPago === "caja"
+        ) {
+          ingresoEfectivo += monto;
+        } else if (
+          formaIngreso === "mercadopago" ||
+          formaIngreso === "mercado pago" ||
+          formaIngreso === "tarjeta" ||
+          formaIngreso === "transferencia" ||
+          ingreso.opcionPago === "cuenta_restaurante"
+        ) {
+          ingresoVirtual += monto;
+        }
+      });
+
+      return { ingresoEfectivo, ingresoVirtual };
+    } catch (error) {
+      console.error("❌ Error calculando resumen de ingresos:", error);
+      return { ingresoEfectivo: 0, ingresoVirtual: 0 };
+    }
+  }, [getIngresos, ingresos?.totalIngresos, ingresos?.ingresos?.length]);
 
   // Calcular valores usando los datos del hook optimizado
   const egresosTotales = getTotalEgresos();
   const ingresosRegistrados = getTotalIngresos();
+  
+  // Usar resumenIngresos en lugar de ventas
+  const ingresoEfectivoTotal = resumenIngresos.ingresoEfectivo;
+  const ingresoVirtualTotal = resumenIngresos.ingresoVirtual;
+  const ingresosTotales = ingresoEfectivoTotal + ingresoVirtualTotal;
+  
+  // Mantener variables de ventas para compatibilidad
   const ventasEfectivo = getVentasEfectivo();
   const ventasVirtual = getVentasVirtual();
   const ventasTotales = ventasEfectivo + ventasVirtual;
@@ -99,7 +149,6 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
               {formatDinero(egresosTotales)}
             </span>
           </div>
-          <div className="text-xs text-slate-400 mb-4">Alivios + Compras</div>
 
           {/* Ingresos Totales */}
           <div className="flex items-center justify-between mb-4">
@@ -182,27 +231,21 @@ function Rendimiento({ onToggle, isExpanded, data, formatDinero, getEfectivoTota
           {/* Ingresos Breakdown */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-300">• Ventas (Efectivo):</span>
+              <span className="text-slate-300">• Ingreso Efectivo:</span>
               <span className="text-green-400 font-medium">
-                {formatDinero(ventasEfectivo)}
+                {formatDinero(ingresoEfectivoTotal)}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-300">• Ventas (Virtual):</span>
+              <span className="text-slate-300">• Ingreso Virtual:</span>
               <span className="text-green-400 font-medium">
-                {formatDinero(ventasVirtual)}
+                {formatDinero(ingresoVirtualTotal)}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs border-t border-slate-600 pt-1 mt-1">
-              <span className="text-slate-300 font-semibold">• Total Ventas:</span>
+              <span className="text-slate-300 font-semibold">• Total Ingresos:</span>
               <span className="text-green-400 font-bold">
-                {formatDinero(ventasTotales)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-300">• Otros Ingresos:</span>
-              <span className="text-green-400 font-medium">
-                {formatDinero(ingresosRegistrados - ventasTotales)}
+                {formatDinero(ingresosTotales)}
               </span>
             </div>
           </div>

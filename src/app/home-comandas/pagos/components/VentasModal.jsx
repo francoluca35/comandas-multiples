@@ -7,35 +7,42 @@ export default function VentasModal({ isOpen, onClose }) {
   const [ventasData, setVentasData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Simular datos de ventas
+  // Obtener ventas desde la API
   const fetchVentas = async (period) => {
     setLoading(true);
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const restauranteId = localStorage.getItem("restauranteId");
+      if (!restauranteId) {
+        throw new Error("No hay restaurante seleccionado");
+      }
 
-    const mockData = {
-      dia: {
-        restaurante: 12500,
-        takeaway: 3200,
-        delivery: 1800,
-        total: 17500,
-      },
-      semana: {
-        restaurante: 87500,
-        takeaway: 22400,
-        delivery: 12600,
-        total: 122500,
-      },
-      mes: {
-        restaurante: 350000,
-        takeaway: 89600,
-        delivery: 50400,
-        total: 490000,
-      },
-    };
+      const response = await fetch(
+        `/api/ventas-periodo?restauranteId=${restauranteId}&periodo=${period}`
+      );
 
-    setVentasData(mockData[period]);
-    setLoading(false);
+      if (!response.ok) {
+        throw new Error("Error al obtener las ventas");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setVentasData(data.data);
+      } else {
+        throw new Error(data.error || "Error al obtener las ventas");
+      }
+    } catch (error) {
+      console.error("❌ Error obteniendo ventas:", error);
+      // En caso de error, mostrar datos vacíos
+      setVentasData({
+        restaurante: 0,
+        takeaway: 0,
+        delivery: 0,
+        total: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

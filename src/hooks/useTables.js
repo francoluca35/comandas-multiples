@@ -351,6 +351,7 @@ export const useTables = () => {
         metodoPago: paymentMethod,
         total: total || tableData.total || 0,
         tipoVenta: tipoFinal,
+        fechaVenta: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 

@@ -128,50 +128,9 @@ function VentasCard() {
         <span className="font-semibold text-sm sm:text-base">Ventas</span>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - 2x2 layout */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4 flex-1">
-        <div className="bg-[#3a3a3a] rounded-lg p-2 sm:p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <svg
-                className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                />
-              </svg>
-              <span className="text-xs sm:text-sm">Salón</span>
-            </div>
-            <span className="text-xs sm:text-sm font-semibold">{contadores.salon}</span>
-          </div>
-        </div>
-        <div className="bg-[#3a3a3a] rounded-lg p-2 sm:p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <svg
-                className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
-              <span className="text-xs sm:text-sm">Takeaway</span>
-            </div>
-            <span className="text-xs sm:text-sm font-semibold">{contadores.takeaway}</span>
-          </div>
-        </div>
+        {/* Delivery - Top Left */}
         <div className="bg-[#3a3a3a] rounded-lg p-2 sm:p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -193,67 +152,61 @@ function VentasCard() {
             <span className="text-xs sm:text-sm font-semibold">{contadores.delivery}</span>
           </div>
         </div>
+        
+        {/* Takeaway - Top Right */}
+        <div className="bg-[#3a3a3a] rounded-lg p-2 sm:p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg
+                className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                />
+              </svg>
+              <span className="text-xs sm:text-sm">Takeaway</span>
+            </div>
+            <span className="text-xs sm:text-sm font-semibold">{contadores.takeaway}</span>
+          </div>
+        </div>
+        
+        {/* Salón - Bottom Left, spanning 2 columns */}
+        <div className="bg-[#3a3a3a] rounded-lg p-2 sm:p-3 col-span-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg
+                className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                />
+              </svg>
+              <span className="text-xs sm:text-sm">Salón</span>
+            </div>
+            <span className="text-xs sm:text-sm font-semibold">{contadores.salon}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex space-x-1 sm:space-x-2 mt-auto">
+      {/* Botón único */}
+      <div className="flex justify-center mt-auto">
         <button
-          className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium flex items-center justify-center transition-colors duration-200"
-          onClick={() => handleNavigation("takeaway")}
-        >
-          <svg
-            className="w-3 h-3 sm:w-4 sm:h-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-            />
-          </svg>
-          <span className="hidden sm:inline">Takeaway</span>
-          <span className="sm:hidden">T</span>
-        </button>
-        <button
-          className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium flex items-center justify-center transition-colors duration-200"
-          onClick={() => handleNavigation("delivery")}
-        >
-          <svg
-            className="w-3 h-3 sm:w-4 sm:h-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-            />
-          </svg>
-          <span className="hidden sm:inline">Delivery</span>
-          <span className="sm:hidden">D</span>
-        </button>
-        <button
-          className="bg-white text-gray-800 rounded-lg px-2 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium border border-gray-300 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center"
+          className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors duration-200"
           onClick={() => handleNavigation("salon")}
         >
-          <svg
-            className="w-3 h-3 sm:w-4 sm:h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
+          Ir a ventas
         </button>
       </div>
 
