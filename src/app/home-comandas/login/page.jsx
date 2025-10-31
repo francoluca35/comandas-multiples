@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { FaUsers, FaSyncAlt, FaPlus, FaFingerprint, FaKey } from "react-icons/fa";
+import { FaUsers, FaSyncAlt, FaFingerprint, FaKey } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useRestaurantUsers } from "../../../hooks/useRestaurantUsers";
 import { useBiometricAuth } from "../../../hooks/useBiometricAuth";
@@ -10,13 +10,6 @@ import BiometricSetupModal from "../../../components/BiometricSetupModal";
 function Login() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [password, setPassword] = useState("");
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [nuevoUsuario, setNuevoUsuario] = useState({
-    usuario: "",
-    password: "",
-    rol: "usuario",
-    imagen: "",
-  });
   const [restauranteInfo, setRestauranteInfo] = useState(null);
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [selectedUserForBiometric, setSelectedUserForBiometric] = useState(null);
@@ -60,63 +53,6 @@ function Login() {
     cargarRestauranteInfo();
   }, []);
 
-  // Mostrar automáticamente el formulario si solo existe el usuario "admin"
-  useEffect(() => {
-    if (!loading && usuarios.length > 0) {
-      const usuariosValidos = usuarios.filter(user => user.usuario !== "admin");
-      if (usuariosValidos.length === 0) {
-        console.log("🔒 Solo existe usuario admin, mostrando formulario de creación");
-        setMostrarFormulario(true);
-      }
-    }
-  }, [usuarios, loading]);
-
-  const handleCrearUsuario = async () => {
-    try {
-      if (!nuevoUsuario.usuario || !nuevoUsuario.password) {
-        Swal.fire("Error", "Todos los campos son requeridos", "error");
-        return;
-      }
-
-      // Verificar que no se intente crear un usuario "admin"
-      if (nuevoUsuario.usuario.toLowerCase() === "admin") {
-        Swal.fire("Error", "No se puede crear un usuario con el nombre 'admin'", "error");
-        return;
-      }
-
-      // Verificar límite de usuarios (excluyendo admin)
-      const usuariosValidos = usuarios.filter(user => user.usuario !== "admin");
-      if (usuariosValidos.length >= restauranteInfo.cantUsuarios) {
-        Swal.fire(
-          "Error",
-          `Solo puedes crear ${restauranteInfo.cantUsuarios} usuarios`,
-          "error"
-        );
-        return;
-      }
-
-      await crearUsuario(nuevoUsuario);
-
-      // Limpiar formulario
-      setNuevoUsuario({
-        usuario: "",
-        password: "",
-        rol: "usuario",
-        imagen: "",
-      });
-      
-      // Solo ocultar formulario si ya hay usuarios válidos
-      const usuariosValidosDespues = usuarios.filter(user => user.usuario !== "admin");
-      if (usuariosValidosDespues.length > 0) {
-        setMostrarFormulario(false);
-      }
-
-      Swal.fire("Éxito", "Usuario creado correctamente", "success");
-    } catch (error) {
-      console.error("Error al crear usuario:", error);
-      Swal.fire("Error", "Error al crear usuario", "error");
-    }
-  };
 
   const handleLogin = async () => {
     if (!usuarioSeleccionado) return;
@@ -368,72 +304,12 @@ function Login() {
         {/* Título */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-white uppercase tracking-wide">
-            FRANCOMPUTER
+            {restauranteInfo?.nombre || "Restaurante"}
           </h1>
           <p className="text-white text-sm mt-1">
             Usuarios: {usuarios.filter(user => user.usuario !== "admin").length}/{restauranteInfo.cantUsuarios}
           </p>
         </div>
-
-        {/* Formulario de creación */}
-        {mostrarFormulario && (
-          <div className="mb-6 p-4 bg-black bg-opacity-40 rounded-xl border border-white border-opacity-20">
-            <h3 className="text-lg font-semibold mb-3 text-white">Crear Nuevo Usuario</h3>
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Nombre de usuario"
-                value={nuevoUsuario.usuario}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, usuario: e.target.value })
-                }
-                className="w-full p-3 rounded-lg text-black bg-white"
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={nuevoUsuario.password}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
-                }
-                className="w-full p-3 rounded-lg text-black bg-white"
-              />
-              <select
-                value={nuevoUsuario.rol}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, rol: e.target.value })
-                }
-                className="w-full p-3 rounded-lg text-black bg-white"
-              >
-                <option value="usuario">Usuario</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <input
-                type="url"
-                placeholder="URL de imagen (opcional)"
-                value={nuevoUsuario.imagen}
-                onChange={(e) =>
-                  setNuevoUsuario({ ...nuevoUsuario, imagen: e.target.value })
-                }
-                className="w-full p-3 rounded-lg text-black bg-white"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCrearUsuario}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Crear
-                </button>
-                <button
-                  onClick={() => setMostrarFormulario(false)}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Lista de usuarios */}
         {usuarios.filter(user => user.usuario !== "admin").length > 0 ? (
@@ -457,25 +333,9 @@ function Login() {
           </div>
         ) : (
           <div className="text-center mb-6">
-            <div className="text-yellow-400 mb-4">
-              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Usuario Admin Bloqueado
-            </h3>
-            <p className="text-sm text-gray-300 mb-4">
-              El usuario "admin" predeterminado está bloqueado por seguridad. 
-              Debes crear un nuevo usuario para acceder al sistema.
+            <p className="text-white text-lg mb-4">
+              No hay usuarios disponibles
             </p>
-            <button
-              onClick={() => setMostrarFormulario(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 mx-auto transition-colors"
-            >
-              <FaPlus />
-              Crear Nuevo Usuario
-            </button>
           </div>
         )}
 

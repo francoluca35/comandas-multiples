@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 
@@ -7,6 +7,7 @@ function Register() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [nombreRestaurante, setNombreRestaurante] = useState("Restaurante");
 
   const [formData, setFormData] = useState({
     nombreCompleto: "",
@@ -16,6 +17,17 @@ function Register() {
     rol: "Mesero",
     foto: null,
   });
+
+  useEffect(() => {
+    const cargarNombreRestaurante = () => {
+      const nombreResto = localStorage.getItem("nombreResto");
+      if (nombreResto) {
+        setNombreRestaurante(nombreResto);
+      }
+    };
+
+    cargarNombreRestaurante();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -96,7 +108,7 @@ function Register() {
         {/* Logo QuickSolution */}
         <div className="text-center mb-6">
           <h1 className="text-5xl text-quickSolutionBlue font-cursive">
-            QuickSolutión
+            QuickSolution
           </h1>
         </div>
 
@@ -166,7 +178,7 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full bg-[#4e968d] hover:bg-[#1676a3] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
+            className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black font-bold py-2 rounded mt-2 transition-all duration-200"
           >
             Registrarse
           </button>
