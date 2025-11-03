@@ -8,7 +8,10 @@ import {
   getDocs,
   updateDoc,
   doc,
+  getDoc,
+  addDoc,
   onSnapshot,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
@@ -83,14 +86,39 @@ export const useDeliveryOrders = () => {
       const restaurantId = getRestaurantId();
       const deliveryRef = collection(db, "restaurantes", restaurantId, "delivery");
       
-      // Filtrar solo pedidos entregados
-      const q = query(
-        deliveryRef,
-        where("status", "==", "entregado"),
-        orderBy("fechaVenta", "desc")
-      );
+      let querySnapshot;
+      try {
+        // Intentar con índice compuesto (status + fechaVenta)
+        const q = query(
+          deliveryRef,
+          where("status", "==", "entregado"),
+          orderBy("fechaVenta", "desc")
+        );
+        querySnapshot = await getDocs(q);
+      } catch (indexError) {
+        // Si no existe el índice, obtener todos y filtrar/ordenar en memoria
+        console.warn("Índice compuesto no encontrado, obteniendo todos los pedidos y filtrando en memoria:", indexError);
+        const allDocs = await getDocs(deliveryRef);
+        const pedidosEntregados = [];
+        
+        allDocs.forEach((doc) => {
+          const data = doc.data();
+          if (data.status === "entregado") {
+            pedidosEntregados.push({
+              id: doc.id,
+              ...data,
+              fechaVenta: data.fechaVenta?.toDate() || data.updatedAt?.toDate() || data.timestamp?.toDate() || new Date(),
+            });
+          }
+        });
+        
+        // Ordenar por fechaVenta en memoria
+        pedidosEntregados.sort((a, b) => b.fechaVenta.getTime() - a.fechaVenta.getTime());
+        
+        setPedidosEntregados(pedidosEntregados);
+        return;
+      }
 
-      const querySnapshot = await getDocs(q);
       const pedidos = [];
       querySnapshot.forEach((doc) => {
         pedidos.push({
@@ -169,23 +197,24 @@ export const useDeliveryOrders = () => {
         });
       });
 
-      // Listener para pedidos entregados
-      const qEntregados = query(
-        deliveryRef,
-        where("status", "==", "entregado"),
-        orderBy("fechaVenta", "desc")
-      );
-
-      const unsubscribeEntregados = onSnapshot(qEntregados, (snapshot) => {
+      // Listener para pedidos entregados - sin ordenar para evitar error de índice
+      const unsubscribeEntregados = onSnapshot(deliveryRef, (snapshot) => {
         const pedidos = [];
         snapshot.forEach((doc) => {
-          pedidos.push({
-            id: doc.id,
-            ...doc.data(),
-            fechaVenta: doc.data().fechaVenta?.toDate() || new Date(),
-          });
+          const data = doc.data();
+          if (data.status === "entregado") {
+            pedidos.push({
+              id: doc.id,
+              ...data,
+              fechaVenta: data.fechaVenta?.toDate() || data.updatedAt?.toDate() || new Date(),
+            });
+          }
         });
+        // Ordenar por fechaVenta en memoria
+        pedidos.sort((a, b) => b.fechaVenta.getTime() - a.fechaVenta.getTime());
         setPedidosEntregados(pedidos);
+      }, (error) => {
+        console.error("Error en listener de pedidos entregados:", error);
       });
 
       return () => {
@@ -220,11 +249,44 @@ export const useDeliveryOrders = () => {
     try {
       const restaurantId = getRestaurantId();
       const pedidoRef = doc(db, "restaurantes", restaurantId, "delivery", pedidoId);
+      
+      // Obtener datos del pedido antes de actualizarlo
+      const pedidoDoc = await getDoc(pedidoRef);
+      const pedidoData = pedidoDoc.exists() ? pedidoDoc.data() : null;
+      
+      // Actualizar estado del pedido
       await updateDoc(pedidoRef, {
         status: "entregado",
         fechaEntrega: new Date(),
         updatedAt: new Date(),
       });
+      
+      // Crear notificación para el admin
+      if (pedidoData) {
+        try {
+          const notificationsRef = collection(db, "restaurantes", restaurantId, "notificaciones");
+          
+          await addDoc(notificationsRef, {
+            type: "delivery-delivered",
+            pedido: {
+              id: pedidoId,
+              cliente: pedidoData.cliente || "Sin nombre",
+              total: pedidoData.total || 0,
+              productos: pedidoData.productos || [],
+              direccion: pedidoData.direccion || "",
+            },
+            mensaje: `Pedido del cliente "${pedidoData.cliente || "Sin nombre"}" se entregó`,
+            leida: false,
+            createdAt: serverTimestamp(),
+            timestamp: new Date(),
+          });
+          
+          console.log("✅ Notificación de pedido entregado creada");
+        } catch (notifError) {
+          console.error("Error creando notificación de pedido entregado:", notifError);
+          // No fallar la entrega si falla la notificación
+        }
+      }
     } catch (err) {
       console.error("Error marcando pedido como entregado:", err);
       throw err;

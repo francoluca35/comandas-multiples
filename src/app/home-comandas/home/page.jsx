@@ -15,6 +15,8 @@ import { useRole } from "@/app/context/RoleContext";
 import useOrderReadyNotifications from "../../../hooks/useOrderReadyNotifications";
 import OrderReadyNotification from "../../../components/OrderReadyNotification";
 import MultipleOrderReadyNotifications from "../../../components/MultipleOrderReadyNotifications";
+import useDeliveryDeliveredNotifications from "../../../hooks/useDeliveryDeliveredNotifications";
+import MultipleDeliveryDeliveredNotifications from "../../../components/MultipleDeliveryDeliveredNotifications";
 import { useStockAlertManager } from "../../../hooks/useStockAlertManager";
 import StockLowAlert from "../../../components/StockLowAlert";
 
@@ -30,6 +32,13 @@ function DashboardContent() {
     clearNotification,
     clearAllNotifications
   } = useOrderReadyNotifications();
+
+  // Hook para notificaciones de pedidos entregados
+  const {
+    notifications: deliveredNotifications,
+    clearNotification: clearDeliveredNotification,
+    clearAllNotifications: clearAllDeliveredNotifications
+  } = useDeliveryDeliveredNotifications();
 
   // Hook para alertas de stock bajo
   const {
@@ -123,6 +132,12 @@ function DashboardContent() {
       <MultipleOrderReadyNotifications
         notifications={notifications}
         onClose={clearNotification}
+      />
+
+      {/* Notificaciones de pedidos entregados */}
+      <MultipleDeliveryDeliveredNotifications
+        notifications={deliveredNotifications}
+        onClose={clearDeliveredNotification}
       />
 
       {/* Alerta de stock bajo */}
