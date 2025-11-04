@@ -1,0 +1,780 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { useProducts } from "../../../../hooks/useProducts";
+import { usePromociones } from "../../../../hooks/usePromociones";
+import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
+import { db } from "../../../../../lib/firebase";
+import ClienteModal from "./ClienteModal";
+
+// Función para obtener el restaurantId desde localStorage
+const getRestaurantId = () => {
+  if (typeof window !== "undefined") {
+    const restaurantId = localStorage.getItem("restauranteId");
+    if (!restaurantId) {
+      throw new Error("No se encontró el ID del restaurante");
+    }
+    return restaurantId;
+  }
+  return null;
+};
+
+function PedidoView({ mesa, onBack, onMesaOcupada }) {
+  const {
+    mainCategories,
+    subCategories,
+    products,
+    loading,
+    fetchMainCategories,
+    fetchSubCategories,
+    fetchAllProducts,
+    fetchAllSubCategories,
+  } = useProducts();
+
+  const { promociones, fetchPromociones } = usePromociones();
+
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [selectedMainCategory, setSelectedMainCategory] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [allSubCategories, setAllSubCategories] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [orderItems, setOrderItems] = useState([]);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [productQuantity, setProductQuantity] = useState(1);
+  const [productNota, setProductNota] = useState("");
+  const [showNotaModal, setShowNotaModal] = useState(false);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [clientData, setClientData] = useState({
+    nombre: "",
+    email: "",
+    whatsapp: "",
+  });
+  const [clienteDataSaved, setClienteDataSaved] = useState(false);
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchMainCategories();
+    fetchAllProducts();
+    fetchAllSubCategories().then(setAllSubCategories);
+    fetchPromociones();
+  }, []);
+
+  // Mostrar modal de cliente si es una mesa libre y no se han guardado los datos
+  useEffect(() => {
+    if (mesa && mesa.estado === "libre" && !clienteDataSaved) {
+      setShowClientModal(true);
+    }
+  }, [mesa, clienteDataSaved]);
+
+  // Seleccionar primera categoría principal por defecto
+  useEffect(() => {
+    if (mainCategories.length > 0 && !selectedMainCategory) {
+      setSelectedMainCategory(mainCategories[0].id);
+    }
+  }, [mainCategories]);
+
+  // Cargar subcategorías cuando cambie la categoría principal
+  useEffect(() => {
+    if (selectedMainCategory) {
+      fetchSubCategories(selectedMainCategory);
+    }
+  }, [selectedMainCategory]);
+
+  // Seleccionar primera subcategoría por defecto
+  useEffect(() => {
+    if (
+      subCategories[selectedMainCategory] &&
+      subCategories[selectedMainCategory].length > 0 &&
+      !selectedSubCategory
+    ) {
+      setSelectedSubCategory(subCategories[selectedMainCategory][0].id);
+    } else {
+      setSelectedSubCategory("");
+    }
+  }, [subCategories, selectedMainCategory]);
+
+  // Debug: Monitorear cambios en el estado del pedido
+  useEffect(() => {
+    console.log('🔄 Estado del pedido actualizado:');
+    console.log('📋 Items:', orderItems);
+    console.log('💰 Total:', orderTotal);
+    console.log('📊 Cantidad de items:', orderItems.length);
+  }, [orderItems, orderTotal]);
+
+  const handleProductSelect = (product) => {
+    setSelectedProduct(product);
+    setProductQuantity(1);
+    setProductNota("");
+  };
+
+  const handleAddToOrder = () => {
+    if (!selectedProduct) return;
+
+    const newItem = {
+      id: Date.now(),
+      producto: selectedProduct.nombre,
+      unidades: productQuantity,
+      precio: selectedProduct.precio,
+      total: selectedProduct.precio * productQuantity,
+      notas: productNota.trim() || "",
+      descripcion: selectedProduct.descripcion || selectedProduct.descripción || "",
+    };
+
+    console.log('🛒 Agregando item al pedido:', newItem);
+    console.log('💰 Precio del item:', selectedProduct.precio);
+    console.log('📦 Cantidad:', productQuantity);
+    console.log('💵 Total del item:', selectedProduct.precio * productQuantity);
+
+    setOrderItems((prev) => {
+      const newItems = [...prev, newItem];
+      console.log('📋 Items actualizados:', newItems);
+      return newItems;
+    });
+    
+    setOrderTotal((prev) => {
+      const newTotal = prev + selectedProduct.precio * productQuantity;
+      console.log('💰 Total actualizado:', newTotal);
+      return newTotal;
+    });
+    
+    setSelectedProduct(null);
+    setProductQuantity(1);
+    setProductNota("");
+  };
+
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity >= 1) {
+      setProductQuantity(newQuantity);
+    }
+  };
+
+  const handleRemoveFromOrder = (itemId) => {
+    const itemToRemove = orderItems.find((item) => item.id === itemId);
+    if (itemToRemove) {
+      setOrderItems((prev) => prev.filter((item) => item.id !== itemId));
+      setOrderTotal((prev) => prev - itemToRemove.total);
+    }
+  };
+
+  const handleClientSubmit = (e) => {
+    e.preventDefault();
+    setShowClientModal(false);
+  };
+
+  const handleClientSave = async (clienteData) => {
+    try {
+      console.log("💾 Guardando datos del cliente:", clienteData);
+      
+      // Guardar datos del cliente en la mesa
+      const restauranteId = getRestaurantId();
+      const mesaRef = doc(db, "restaurantes", restauranteId, "tables", mesa.id);
+      
+      await updateDoc(mesaRef, {
+        datos_cliente: clienteData,
+        cliente: clienteData.nombre, // Mantener compatibilidad con campo existente
+        updatedAt: new Date(),
+      });
+      
+      // Actualizar estado local
+      setClientData(clienteData);
+      setClienteDataSaved(true);
+      setShowClientModal(false);
+      
+      console.log("✅ Datos del cliente guardados exitosamente");
+    } catch (error) {
+      console.error("❌ Error al guardar datos del cliente:", error);
+      alert("Error al guardar los datos del cliente. Intente nuevamente.");
+    }
+  };
+
+  const handleTerminar = async () => {
+    if (orderItems.length === 0) {
+      alert("Debes agregar al menos un producto al pedido");
+      return;
+    }
+
+    try {
+      console.log("🚀 Iniciando proceso de envío a cocina...");
+      console.log("Items en el pedido:", orderItems);
+      console.log("Total del pedido:", orderTotal);
+
+      const restauranteId = getRestaurantId();
+      console.log("Restaurante ID:", restauranteId);
+
+      let docRef = null; // Declarar docRef fuera del try-catch
+
+      // ENVIAR PEDIDO A COCINA PRIMERO
+      try {
+        console.log("📋 Preparando datos para cocina...");
+
+        // Preparar datos del pedido para cocina
+        const pedidoCocina = {
+          mesa: mesa.numero || mesa.id,
+          productos: orderItems.map((item) => ({
+            nombre: item.producto,
+            cantidad: item.unidades,
+            precio: item.precio,
+            total: item.total,
+            notas: item.notas || "",
+            descripcion: item.descripcion || "",
+          })),
+          total: orderTotal,
+          cliente: clientData.nombre || "Sin nombre",
+          datos_cliente: clientData,
+          notas: "",
+          timestamp: new Date(),
+          estado: "pendiente",
+          restauranteId: restauranteId,
+        };
+
+        console.log("📋 Datos del pedido para cocina:", pedidoCocina);
+
+        // Crear pedido en la colección de pedidos de cocina
+        const pedidoCocinaRef = collection(
+          db,
+          `restaurantes/${restauranteId}/pedidosCocina`
+        );
+
+        docRef = await addDoc(pedidoCocinaRef, pedidoCocina);
+        console.log("✅ Pedido enviado a cocina exitosamente. Document ID:", docRef.id);
+
+        // Mostrar notificación de éxito
+        alert(`✅ Pedido enviado a cocina exitosamente!\n\nMesa: ${mesa.numero || mesa.id}\nItems: ${orderItems.length}\nTotal: $${orderTotal.toLocaleString()}\n\nID del pedido: ${docRef.id}`);
+
+      } catch (cocinaError) {
+        console.error("❌ Error al enviar pedido a cocina:", cocinaError);
+        alert(`❌ Error al enviar pedido a cocina:\n${cocinaError.message}\n\nContacta al administrador.`);
+        return;
+      }
+
+      // ACTUALIZAR LA MESA EN FIRESTORE
+      try {
+        console.log("🔄 Actualizando estado de la mesa...");
+        
+        const mesaRef = doc(
+          db,
+          `restaurantes/${restauranteId}/tables/${mesa.id}`
+        );
+
+        await updateDoc(mesaRef, {
+          estado: "ocupado",
+          cliente: clientData.nombre || "Sin nombre",
+          datos_cliente: clientData,
+          productos: orderItems,
+          total: orderTotal,
+          updatedAt: new Date(),
+          pedidoId: docRef?.id || "sin-id",
+        });
+
+        console.log("✅ Mesa actualizada exitosamente");
+
+      } catch (mesaError) {
+        console.error("❌ Error al actualizar la mesa:", mesaError);
+        alert(`⚠️ Pedido enviado a cocina pero hubo un problema al actualizar la mesa:\n${mesaError.message}`);
+      }
+
+      // Volver a la vista de mesas
+      console.log("🔄 Redirigiendo a la vista de mesas...");
+      onMesaOcupada(mesa);
+      onBack();
+
+    } catch (error) {
+      console.error("❌ Error general en handleTerminar:", error);
+      alert(`❌ Error inesperado:\n${error.message}\n\nInténtalo de nuevo.`);
+    }
+  };
+
+  const handleFinalizarPedido = async () => {
+    if (orderItems.length === 0) {
+      alert("Debes agregar al menos un producto al pedido");
+      return;
+    }
+
+    try {
+      console.log("🏁 Iniciando proceso de finalización del pedido...");
+      console.log("Items en el pedido:", orderItems);
+      console.log("Total del pedido:", orderTotal);
+
+      const restauranteId = getRestaurantId();
+      console.log("Restaurante ID:", restauranteId);
+
+      let docRef = null; // Declarar docRef fuera del try-catch
+
+      // CREAR PEDIDO FINALIZADO
+      try {
+        console.log("📋 Preparando datos del pedido finalizado...");
+
+        // Preparar datos del pedido finalizado
+        const pedidoFinalizado = {
+          mesa: mesa.numero || mesa.id,
+          productos: orderItems.map((item) => ({
+            nombre: item.producto,
+            cantidad: item.unidades,
+            precio: item.precio,
+            total: item.total,
+            notas: item.notas || "",
+            descripcion: item.descripcion || "",
+          })),
+          total: orderTotal,
+          cliente: clientData.name || "Sin nombre",
+          notas: "",
+          timestamp: new Date(),
+          estado: "finalizado",
+          restauranteId: restauranteId,
+          tipo: "venta_directa", // Indica que fue una venta directa sin pasar por cocina
+        };
+
+        console.log("📋 Datos del pedido finalizado:", pedidoFinalizado);
+
+        // Crear pedido en la colección de pedidos finalizados
+        const pedidosFinalizadosRef = collection(
+          db,
+          `restaurantes/${restauranteId}/pedidosFinalizados`
+        );
+
+        docRef = await addDoc(pedidosFinalizadosRef, pedidoFinalizado);
+        console.log("✅ Pedido finalizado exitosamente. Document ID:", docRef.id);
+
+        // Mostrar notificación de éxito
+        alert(`✅ Pedido finalizado exitosamente!\n\nMesa: ${mesa.numero || mesa.id}\nItems: ${orderItems.length}\nTotal: $${orderTotal.toLocaleString()}\n\nID del pedido: ${docRef.id}`);
+
+      } catch (finalizarError) {
+        console.error("❌ Error al finalizar pedido:", finalizarError);
+        alert(`❌ Error al finalizar pedido:\n${finalizarError.message}\n\nContacta al administrador.`);
+        return;
+      }
+
+      // ACTUALIZAR LA MESA EN FIRESTORE
+      try {
+        console.log("🔄 Actualizando estado de la mesa...");
+        
+        const mesaRef = doc(
+          db,
+          `restaurantes/${restauranteId}/tables/${mesa.id}`
+        );
+
+        await updateDoc(mesaRef, {
+          estado: "ocupado",
+          cliente: clientData.name || "Sin nombre",
+          productos: orderItems,
+          total: orderTotal,
+          updatedAt: new Date(),
+          pedidoId: docRef?.id || "sin-id",
+          pedidoFinalizado: true,
+        });
+
+        console.log("✅ Mesa actualizada exitosamente");
+
+      } catch (mesaError) {
+        console.error("❌ Error al actualizar la mesa:", mesaError);
+        alert(`⚠️ Pedido finalizado pero hubo un problema al actualizar la mesa:\n${mesaError.message}`);
+      }
+
+      // Volver a la vista de mesas
+      console.log("🔄 Redirigiendo a la vista de mesas...");
+      onMesaOcupada(mesa);
+      onBack();
+
+    } catch (error) {
+      console.error("❌ Error general en handleFinalizarPedido:", error);
+      alert(`❌ Error inesperado:\n${error.message}\n\nInténtalo de nuevo.`);
+    }
+  };
+
+  // Filtrar productos por categoría principal y subcategoría seleccionadas
+  const filteredProducts = selectedMainCategory === "promociones" 
+    ? promociones.filter(p => p.activo !== false).map(p => ({
+        ...p,
+        nombre: p.nombre || p.name,
+        precio: typeof p.precio === 'string' ? parseFloat(p.precio) || 0 : (p.precio || 0),
+        mainCategoryId: "promociones",
+        subCategoryId: "promociones",
+      }))
+    : products.filter((product) => {
+        if (
+          selectedMainCategory &&
+          product.mainCategoryId !== selectedMainCategory
+        ) {
+          return false;
+        }
+
+        if (!selectedSubCategory) {
+          return true;
+        }
+
+        return product.subCategoryId === selectedSubCategory;
+      });
+
+  // Filtrar subcategorías por categoría principal seleccionada
+  const filteredSubCategories = (() => {
+    if (!selectedMainCategory) return [];
+    
+    // Para bebidas, usar las subcategorías exactas del inventario
+    if (selectedMainCategory === "bebidas") {
+      return [
+        { id: "sin alcohol", name: "Sin Alcohol", mainCategoryId: "bebidas" },
+        { id: "con alcohol", name: "Con Alcohol", mainCategoryId: "bebidas" }
+      ];
+    }
+    
+    // Para otras categorías, usar las subcategorías dinámicas
+    return allSubCategories.filter((subCategory) => {
+      return subCategory.mainCategoryId === selectedMainCategory;
+    });
+  })();
+
+  return (
+    <div className="h-screen max-h-screen min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-slate-600/50 shadow-xl">
+        <div className="p-2 sm:p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <button 
+                onClick={onBack} 
+                className="flex items-center space-x-1 sm:space-x-2 text-slate-300 hover:text-white transition-colors duration-200 group"
+              >
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-700 rounded-lg flex items-center justify-center group-hover:bg-slate-600 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </div>
+                <span className="font-medium text-sm">Volver</span>
+              </button>
+              
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold text-white">
+                    Mesa {mesa?.numero}
+                  </h1>
+                  <p className="text-slate-400 text-xs">Nuevo Pedido</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xs">{orderItems.length}</span>
+                </div>
+                <span className="text-slate-300 text-xs font-medium hidden sm:inline">Items</span>
+              </div>
+              
+              <button
+                onClick={() => setShowClientModal(true)}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-xs"
+              >
+                <div className="flex items-center space-x-1">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Cliente</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navegación */}
+      <div className="flex-shrink-0 bg-slate-800/50 border-b border-slate-700/50">
+        <div className="p-2 sm:p-3">
+          {/* Categorías principales */}
+          <div className="flex space-x-1 overflow-x-auto mb-2 pb-1">
+            {mainCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedMainCategory(category.id)}
+                className={`px-2 py-1 sm:px-3 sm:py-2 rounded-lg flex-shrink-0 transition-all duration-200 font-medium shadow-md text-xs ${
+                  selectedMainCategory === category.id
+                    ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+            {/* Categoría Promociones */}
+            <button
+              onClick={() => {
+                setSelectedMainCategory("promociones");
+                setSelectedSubCategory("");
+              }}
+              className={`px-2 py-1 sm:px-3 sm:py-2 rounded-lg flex-shrink-0 transition-all duration-200 font-medium shadow-md text-xs ${
+                selectedMainCategory === "promociones"
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25"
+                  : "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700"
+              }`}
+            >
+              🎁 Promociones
+            </button>
+          </div>
+
+          {/* Subcategorías */}
+          {selectedMainCategory !== "promociones" && (
+            <div className="flex space-x-1 overflow-x-auto">
+              <button
+                onClick={() => setSelectedSubCategory("")}
+                className={`px-2 py-1 rounded-lg flex-shrink-0 transition-all duration-200 text-xs font-medium shadow-md ${
+                  selectedSubCategory === ""
+                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
+                }`}
+              >
+                {selectedMainCategory === "comida"
+                  ? "🍽️ Todas"
+                  : selectedMainCategory === "bebidas"
+                  ? "🥤 Todas"
+                  : "🍽️ Todos"}
+              </button>
+
+              {filteredSubCategories.map((subCategory) => (
+                <button
+                  key={`${subCategory.mainCategoryId}-${subCategory.id}`}
+                  onClick={() => setSelectedSubCategory(subCategory.id)}
+                  className={`px-2 py-1 rounded-lg flex-shrink-0 transition-all duration-200 text-xs font-medium shadow-md ${
+                    selectedSubCategory === subCategory.id
+                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/25"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white"
+                  }`}
+                >
+                  {subCategory.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Layout Principal */}
+      {showClientData && (
+  <div className="flex-1 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm flex flex-col shadow-2xl">
+    {/* Header de Datos del Cliente */}
+    <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-900/50 sticky top-0 z-50">
+      <div className="flex flex-col items-start space-y-4">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleBackToMenu}
+            className="p-3 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white transition-all duration-300 rounded-xl hover:scale-105"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex items-center space-x-2">
+            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Datos del Cliente</h2>
+              <p className="text-slate-400 text-sm">Información de contacto</p>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleNextToOrderSummary}
+          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl hover:shadow-2xl transform hover:scale-105"
+        >
+          <span className="text-base">Continuar</span>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    {/* Formulario de Datos del Cliente */}
+    <div className="flex-1 p-4">
+      <div className="w-full">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Nombre */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+              <div className="p-1.5 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded">
+                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <span>Nombre completo</span>
+            </label>
+            <input
+              type="text"
+              value={clientData.nombre}
+              onChange={(e) => setClientData((prev) => ({ ...prev, nombre: e.target.value }))}
+              className="w-full px-3 py-2 bg-slate-700/80 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-sm transition-all duration-200 hover:bg-slate-700/90"
+              placeholder="Ingresa el nombre completo"
+            />
+          </div>
+
+          {/* WhatsApp */}
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+              <div className="p-1.5 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded">
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <span>WhatsApp</span>
+            </label>
+            <input
+              type="tel"
+              value={clientData.whatsapp}
+              onChange={(e) => setClientData((prev) => ({ ...prev, whatsapp: e.target.value }))}
+              className="w-full px-3 py-2 bg-slate-700/80 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 text-sm transition-all duration-200 hover:bg-slate-700/90"
+              placeholder="5491234567890"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* Modal de Cliente */}
+      {showClientModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md">
+            <div className="p-3 sm:p-4 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-bold text-white">Datos del Cliente</h2>
+                <button
+                  onClick={() => setShowClientModal(false)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleClientSubmit} className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-white font-medium mb-1 sm:mb-2 text-sm">Nombre</label>
+                <input
+                  type="text"
+                  value={clientData.name}
+                  onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                  className="w-full bg-slate-700 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                  placeholder="Nombre del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-1 sm:mb-2 text-sm">Email</label>
+                <input
+                  type="email"
+                  value={clientData.email}
+                  onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                  className="w-full bg-slate-700 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                  placeholder="email@ejemplo.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-white font-medium mb-1 sm:mb-2 text-sm">Teléfono</label>
+                <input
+                  type="tel"
+                  value={clientData.phone}
+                  onChange={(e) => setClientData({ ...clientData, phone: e.target.value })}
+                  className="w-full bg-slate-700 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                  placeholder="+54 9 11 1234-5678"
+                />
+              </div>
+
+              <div className="flex space-x-2 sm:space-x-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowClientModal(false)}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  Aceptar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cliente */}
+      <ClienteModal
+        isOpen={showClientModal}
+        onClose={() => setShowClientModal(false)}
+        onSave={handleClientSave}
+        mesa={mesa}
+      />
+
+      {/* Modal de Nota */}
+      {showNotaModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-3">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md">
+            <div className="p-3 sm:p-4 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-bold text-white">
+                  Nota para {selectedProduct?.nombre || "producto"}
+                </h2>
+                <button
+                  onClick={() => setShowNotaModal(false)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+              <div>
+                <label className="block text-white font-medium mb-1 sm:mb-2 text-sm">
+                  Comentario para cocina (ej: sin cebolla, sin tomate, etc.)
+                </label>
+                <textarea
+                  value={productNota}
+                  onChange={(e) => setProductNota(e.target.value)}
+                  rows={4}
+                  className="w-full bg-slate-700 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 transition-colors text-sm resize-none"
+                  placeholder="Ej: Sin cebolla, sin tomate, bien cocido..."
+                />
+              </div>
+
+              <div className="flex space-x-2 sm:space-x-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductNota("");
+                    setShowNotaModal(false);
+                  }}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 text-sm"
+                >
+                  Limpiar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotaModal(false)}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg text-sm"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default PedidoView;
