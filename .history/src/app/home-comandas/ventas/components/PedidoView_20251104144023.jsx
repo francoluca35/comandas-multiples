@@ -1,0 +1,286 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { useProducts } from "../../../../hooks/useProducts";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { db } from "../../../../../lib/firebase";
+import ClienteModal from "./ClienteModal";
+
+// Función para obtener el restaurantId desde localStorage
+const getRestaurantId = () => {
+  if (typeof window !== "undefined") {
+    const restaurantId = localStorage.getItem("restauranteId");
+    if (!restaurantId) {
+      throw new Error("No se encontró el ID del restaurante");
+    }
+    return restaurantId;
+  }
+  return null;
+};
+
+function PedidoView({ mesa, onBack, onPedidoEnviado }) {
+  const {
+    mainCategories,
+    subCategories,
+    products,
+    loading,
+    fetchMainCategories,
+    fetchSubCategories,
+    fetchAllProducts,
+  } = useProducts();
+
+  // Estados principales
+  const [selectedMainCategory, setSelectedMainCategory] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [expandedProduct, setExpandedProduct] = useState(null);
+  const [productQuantity, setProductQuantity] = useState(1);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [showItemsModal, setShowItemsModal] = useState(false);
+  const [orderType, setOrderType] = useState("salon"); // salon, takeaway, delivery
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar si es mobile/tablet
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Cargar datos al montar
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([fetchMainCategories(), fetchAllProducts()]);
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Cargar subcategorías cuando cambie la categoría principal
+  useEffect(() => {
+    if (selectedMainCategory) {
+      fetchSubCategories(selectedMainCategory);
+    }
+  }, [selectedMainCategory]);
+
+  // Filtrar productos según categoría seleccionada
+  const filteredProducts = products.filter((product) => {
+    if (selectedMainCategory === "todos") {
+      return true;
+    }
+    if (selectedSubCategory) {
+      return (
+        (product.subCategoryId === selectedSubCategory ||
+          product.subcategoria === selectedSubCategory) &&
+        (product.mainCategoryId === selectedMainCategory ||
+          product.categoria === selectedMainCategory)
+      );
+    }
+    return (
+      product.mainCategoryId === selectedMainCategory ||
+      product.categoria === selectedMainCategory
+    );
+  });
+
+  // Obtener subcategorías de la categoría seleccionada
+  const currentSubCategories =
+    selectedMainCategory && subCategories[selectedMainCategory]
+      ? subCategories[selectedMainCategory]
+      : [];
+
+  // Manejar selección de producto
+  const handleProductSelect = (product) => {
+    if (isMobile) {
+      // En mobile, expandir el producto para mostrar cantidad
+      setExpandedProduct(product.id);
+      setProductQuantity(1);
+    } else {
+      // En desktop, expandir directamente
+      setExpandedProduct(product.id);
+      setProductQuantity(1);
+    }
+  };
+
+  // Agregar producto al pedido
+  const handleAddProduct = (product) => {
+    const existingProduct = selectedProducts.find((p) => p.id === product.id);
+
+    if (existingProduct) {
+      setSelectedProducts((prev) =>
+        prev.map((p) =>
+          p.id === product.id
+            ? { ...p, cantidad: p.cantidad + productQuantity }
+            : p
+        )
+      );
+    } else {
+      const precioFinal =
+        product.precio * (1 - (product.descuento || 0) / 100);
+      setSelectedProducts((prev) => [
+        ...prev,
+        {
+          ...product,
+          cantidad: productQuantity,
+          precioFinal,
+          total: precioFinal * productQuantity,
+        },
+      ]);
+    }
+
+    // Limpiar selección
+    setExpandedProduct(null);
+    setProductQuantity(1);
+  };
+
+  // Actualizar cantidad en el modal de items
+  const handleUpdateQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) {
+      setSelectedProducts((prev) =>
+        prev.filter((p) => p.id !== productId)
+      );
+    } else {
+      setSelectedProducts((prev) =>
+        prev.map((p) => {
+          if (p.id === productId) {
+            const precioFinal = p.precio * (1 - (p.descuento || 0) / 100);
+            return {
+              ...p,
+              cantidad: newQuantity,
+              total: precioFinal * newQuantity,
+            };
+          }
+          return p;
+        })
+      );
+    }
+  };
+
+  // Eliminar producto del pedido
+  const handleRemoveProduct = (productId) => {
+    setSelectedProducts((prev) => prev.filter((p) => p.id !== productId));
+  };
+
+  // Calcular total
+  const calculateTotal = () => {
+    return selectedProducts.reduce((total, product) => {
+      return total + (product.total || 0);
+    }, 0);
+  };
+
+  // Enviar pedido a cocina
+  const handleEnviarACocina = async () => {
+    if (selectedProducts.length === 0) {
+      alert("Debes agregar al menos un producto al pedido");
+      return;
+    }
+
+    try {
+      const restauranteId = getRestaurantId();
+      const total = calculateTotal();
+
+      // Preparar productos para cocina
+      const productosCocina = selectedProducts.map((product) => ({
+        nombre: product.nombre,
+        cantidad: product.cantidad,
+        precio: product.precio,
+        total: product.total,
+        descripcion: product.descripcion || "",
+      }));
+
+      // Crear pedido para cocina
+      const pedidoCocina = {
+        mesa: mesa?.numero || "NUEVO",
+        productos: productosCocina,
+        total: total,
+        cliente: mesa?.cliente || "Sin nombre",
+        datos_cliente: mesa?.datos_cliente || {},
+        tipo: orderType,
+        notas: "",
+        timestamp: new Date(),
+        estado: "pendiente",
+        restauranteId: restauranteId,
+      };
+
+      // Enviar a cocina
+      const pedidoCocinaRef = collection(
+        db,
+        `restaurantes/${restauranteId}/pedidosCocina`
+      );
+      const docRef = await addDoc(pedidoCocinaRef, pedidoCocina);
+
+      console.log("✅ Pedido enviado a cocina. ID:", docRef.id);
+
+      // Si hay mesa, actualizarla
+      if (mesa?.id) {
+        const mesaRef = doc(db, "restaurantes", restauranteId, "tables", mesa.id);
+        const productosExistentes = mesa.productos || [];
+        const productosActualizados = [
+          ...productosExistentes,
+          ...productosCocina.map((p) => ({
+            producto: p.nombre,
+            unidades: p.cantidad,
+            precio: p.precio,
+            total: p.total,
+          })),
+        ];
+        const totalActualizado = (mesa.total || 0) + total;
+
+        await updateDoc(mesaRef, {
+          productos: productosActualizados,
+          total: totalActualizado,
+          estado: "en_preparacion",
+          updatedAt: new Date(),
+        });
+      }
+
+      // Limpiar pedido
+      setSelectedProducts([]);
+      setExpandedProduct(null);
+      setProductQuantity(1);
+
+      // Notificar al componente padre
+      if (onPedidoEnviado) {
+        onPedidoEnviado({
+          pedidoId: docRef.id,
+          productos: productosCocina,
+          total: total,
+        });
+      }
+
+      alert("✅ Pedido enviado a cocina exitosamente");
+    } catch (error) {
+      console.error("❌ Error al enviar pedido:", error);
+      alert(`Error al enviar el pedido: ${error.message}`);
+    }
+  };
+
+  // Vista Desktop
+  if (!isMobile) {
+    return (
+      <div className="h-full flex flex-col bg-gray-900 overflow-hidden">
+  
+      </div>
+    );
+  }
+
+  // Vista Mobile/Tablet
+  return (
+    <div className="h-full flex flex-col bg-gray-100">
+      {/* Selector de tipo de pedido (3 líneas rojas) */}
+    
+
+   
+
+ 
+     
+    </div>
+  );
+}
+
+export default PedidoView;
+
