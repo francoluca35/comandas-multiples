@@ -13,12 +13,7 @@ function TurnoCard() {
     obtenerDuracionTurno,
     loading,
   } = useTurno();
-  const {
-    registrarInicioSesion,
-    registrarCierreSesion,
-    obtenerHistorial,
-    borrarHistorial,
-  } = useHistorialEmpleados();
+  const { registrarInicioSesion, registrarCierreSesion, obtenerHistorial } = useHistorialEmpleados();
   const { isAdmin } = useRole();
 
   // Obtener usuario directamente del localStorage para el sistema de restaurantes
@@ -77,166 +72,114 @@ function TurnoCard() {
   }, [turnoAbierto, obtenerDuracionTurno]);
 
   const handleAbrirTurno = async () => {
-    try {
-      console.log("🔵 Iniciando proceso de apertura de turno...");
-      
-      // Verificar datos antes de proceder
-      const restauranteId = localStorage.getItem("restauranteId");
-      const usuarioId = localStorage.getItem("usuarioId");
-      const usuario = localStorage.getItem("usuario");
-      const rol = localStorage.getItem("rol");
-      
-      console.log("🔍 Datos en localStorage:", {
-        restauranteId,
-        usuarioId,
-        usuario,
-        rol,
-      });
-
-      if (!restauranteId || !usuarioId || !usuario) {
-        const errorMsg = `Faltan datos necesarios: restauranteId=${restauranteId}, usuarioId=${usuarioId}, usuario=${usuario}`;
-        console.error("❌", errorMsg);
-        alert(`Error: ${errorMsg}`);
-        return;
-      }
-
-      // Primero registrar el inicio de sesión
-      console.log("📝 Registrando inicio de turno en Firestore...");
+    if (abrirTurno()) {
+      console.log("Turno abierto exitosamente");
+      // Registrar inicio de sesión
       await registrarInicioSesion();
-      console.log("✅ Registro de inicio de turno completado");
-
-      // Luego abrir el turno
-      const turnoAbierto = await abrirTurno();
-      if (turnoAbierto) {
-        console.log("✅ Turno abierto exitosamente");
-        alert(
-          "¡Turno abierto exitosamente! Ya puedes usar la aplicación completa."
-        );
-      } else {
-        console.error("❌ Error al abrir el turno");
-        alert("Error al abrir el turno. Por favor, inténtalo de nuevo.");
-      }
-    } catch (error) {
-      console.error("❌ Error en el proceso de apertura:", error);
-      console.error("❌ Stack trace:", error.stack);
-      alert(`Error al abrir el turno: ${error.message || error}`);
+      // Mostrar mensaje de confirmación
+      alert(
+        "¡Turno abierto exitosamente! Ya puedes usar la aplicación completa."
+      );
+    } else {
+      alert("Error al abrir el turno. Por favor, inténtalo de nuevo.");
     }
   };
 
   const handleCerrarTurno = async () => {
-    try {
-      if (!confirm("¿Estás seguro de que quieres cerrar el turno?")) {
-        return;
-      }
-
-      // Primero registrar el cierre de sesión
+    if (confirm("¿Estás seguro de que quieres cerrar el turno?")) {
+      cerrarTurno();
+      // Registrar cierre de sesión
       await registrarCierreSesion();
-
-      // Luego cerrar el turno
-      const turnoCerrado = await cerrarTurno();
-      if (turnoCerrado) {
-        console.log("✅ Turno cerrado exitosamente");
-      } else {
-        console.error("❌ Error al cerrar el turno");
-        alert("Error al cerrar el turno. Por favor, inténtalo de nuevo.");
-      }
-    } catch (error) {
-      console.error("Error en el proceso de cierre:", error);
-      alert("Error al cerrar el turno: " + error.message);
+      console.log("Turno cerrado exitosamente");
     }
   };
 
   const handleDescargarInforme = async () => {
     try {
-      if (
-        !confirm(
-          "¿Deseas descargar el informe? Los datos se borrarán después de la descarga."
-        )
-      ) {
+      if (!confirm("¿Deseas descargar el informe? Los datos se borrarán después de la descarga.")) {
         return;
       }
 
       const historial = await obtenerHistorial();
-
+      
       if (historial.length === 0) {
         alert("No hay datos para exportar");
         return;
       }
 
-      // Crear Excel usando SheetJS (xlsx) con import dinámico
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.utils.book_new();
-
-      // Preparar datos para Excel con los campos solicitados
-      const datosExcel = historial.map((registro) => {
-        // Función para convertir fecha ISO a formato AM/PM (solo hora)
-        const formatearHora = (fechaISO) => {
-          if (!fechaISO) return "";
-          try {
-            const fecha = new Date(fechaISO);
-            // Formato: "08:41:19 PM" (solo hora, minuto, segundo y AM/PM)
-            return fecha.toLocaleTimeString("es-ES", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: true,
-            });
-          } catch (error) {
-            console.warn("Error al formatear fecha:", fechaISO, error);
-            return fechaISO;
-          }
-        };
-
-        return {
-          fecha: registro.fecha || "",
-          horaApertura: formatearHora(registro.horaApertura),
-          horaCierre: formatearHora(registro.horaCierre),
-          rol: registro.rol || "",
-          usuario: registro.usuario || "",
-        };
+      // Generar colores únicos para cada usuario
+      const usuarios = [...new Set(historial.map(h => h.usuarioId))];
+      const colores = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+      ];
+      const colorMap = {};
+      usuarios.forEach((userId, index) => {
+        colorMap[userId] = colores[index % colores.length];
       });
 
+      // Crear Excel usando SheetJS (xlsx) con import dinámico
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      
+      // Preparar datos para Excel
+      const datosExcel = historial.map(registro => ({
+        'Usuario': registro.usuarioNombre || registro.usuarioEmail || 'Desconocido',
+        'Email': registro.usuarioEmail || '',
+        'Tipo': registro.tipo === 'inicio' ? 'Inicio de Sesión' : 'Cierre de Sesión',
+        'Fecha': new Date(registro.timestamp?.toDate?.() || registro.timestamp || registro.fecha).toLocaleString('es-ES'),
+        'Hora': new Date(registro.timestamp?.toDate?.() || registro.timestamp || registro.fecha).toLocaleTimeString('es-ES'),
+      }));
+
       const worksheet = XLSX.utils.json_to_sheet(datosExcel);
+      
+      // Agregar colores a las filas según el usuario
+      const range = XLSX.utils.decode_range(worksheet['!ref']);
+      historial.forEach((registro, index) => {
+        const rowIndex = index + 2; // +2 porque la fila 1 es el header
+        if (rowIndex <= range.e.r + 1) {
+          const color = colorMap[registro.usuarioId] || '#FFFFFF';
+          // Aplicar color a todas las celdas de la fila
+          ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+            const cellAddress = XLSX.utils.encode_cell({ r: rowIndex - 1, c: col.charCodeAt(0) - 65 });
+            if (!worksheet[cellAddress]) worksheet[cellAddress] = {};
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: color.replace('#', '') } },
+              font: { color: { rgb: 'FFFFFF' } }
+            };
+          });
+        }
+      });
 
       // Ajustar ancho de columnas
-      worksheet["!cols"] = [
-        { wch: 15 }, // fecha
-        { wch: 25 }, // horaApertura
-        { wch: 25 }, // horaCierre
-        { wch: 15 }, // rol
-        { wch: 20 }, // usuario
+      worksheet['!cols'] = [
+        { wch: 25 }, // Usuario
+        { wch: 30 }, // Email
+        { wch: 20 }, // Tipo
+        { wch: 25 }, // Fecha
+        { wch: 15 }, // Hora
       ];
 
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Historial Empleados");
-
-      // Generar nombre del archivo
-      const fecha = new Date().toISOString().split("T")[0];
-      const nombreArchivo = `Historial_Empleados_${fecha}.xlsx`;
-
-      // Descargar el archivo
-      console.log("📥 Descargando Excel...");
-      XLSX.writeFile(workbook, nombreArchivo);
-      console.log("✅ Excel descargado exitosamente");
-
-      // Esperar un momento para asegurar que la descarga se complete
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Borrar los datos después de la exportación exitosa
-      console.log("🗑️ Borrando documentos de la colección...");
-      await borrarHistorial();
-      console.log("✅ Documentos borrados exitosamente");
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Historial Empleados');
       
-      alert("✅ Informe descargado exitosamente y datos borrados de la base de datos");
+      // Generar nombre del archivo
+      const fecha = new Date().toISOString().split('T')[0];
+      const nombreArchivo = `Historial_Empleados_${fecha}.xlsx`;
+      
+      // Descargar el archivo
+      XLSX.writeFile(workbook, nombreArchivo);
+      
+      alert('Informe descargado exitosamente');
     } catch (error) {
-      console.error("Error:", error);
-      alert("Error: " + error.message);
+      console.error('Error descargando informe:', error);
+      alert('Error al descargar el informe: ' + error.message);
     }
   };
 
   if (turnoAbierto) {
     // Mostrar turno abierto
     return (
-      <div className="bg-[#2a2a2a] rounded-lg p-4 sm:p-6 text-white h-full flex flex-col">
+             <div className="bg-[#2a2a2a] rounded-lg p-4 sm:p-6 text-white h-full flex flex-col">
         <div className="flex items-center mb-4">
           <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
             <svg
@@ -339,7 +282,7 @@ function TurnoCard() {
             Cerrar
           </button>
           {isAdmin && (
-            <button
+            <button 
               onClick={handleDescargarInforme}
               className="flex-1 bg-green-700 hover:bg-green-600 rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center"
             >
@@ -440,26 +383,26 @@ function TurnoCard() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <button
-          onClick={handleAbrirTurno}
-          className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-lg px-6 py-3 text-lg font-semibold flex items-center justify-center shadow-lg transform transition-all duration-200 hover:scale-105"
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          Abrir Turno
-        </button>
+             <div className="space-y-3">
+         <button
+           onClick={handleAbrirTurno}
+           className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-lg px-6 py-3 text-lg font-semibold flex items-center justify-center shadow-lg transform transition-all duration-200 hover:scale-105"
+         >
+           <svg
+             className="w-5 h-5 mr-2"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24"
+           >
+             <path
+               strokeLinecap="round"
+               strokeLinejoin="round"
+               strokeWidth={2}
+               d="M5 13l4 4L19 7"
+             />
+           </svg>
+           Abrir Turno
+         </button>
 
         <button className="w-full bg-gray-700 hover:bg-gray-600 rounded-lg px-6 py-3 text-lg font-medium flex items-center justify-center transition-colors duration-200">
           <svg

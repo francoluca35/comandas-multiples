@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useUserProfile } from "../../../../hooks/useUserProfile";
 import { useRole } from "../../../context/RoleContext";
 import { useTurno } from "../../../context/TurnoContext";
+import { useHistorialEmpleados } from "@/hooks/useHistorialEmpleados";
 import CloudinaryImage from "../../../../components/CloudinaryImage";
 
 const SidebarContext = createContext();
@@ -41,6 +42,8 @@ function Sidebar() {
   const { userImage, userInitials } = useUserProfile();
   const { permissions, roleInfo } = useRole();
   const { cerrarTurno } = useTurno();
+  const { registrarInicioSesion, registrarCierreSesion } =
+    useHistorialEmpleados();
 
   useEffect(() => {
     if (pathname === "/home-comandas/home" || pathname === "/home-comandas") {
@@ -99,8 +102,9 @@ function Sidebar() {
       }
     };
 
-    // Al entrar a la app marcar online
+    // Al entrar a la app marcar online y registrar inicio de sesión
     markOnline(true);
+    registrarInicioSesion();
 
     const handleBeforeUnload = () => {
       navigator.sendBeacon &&
@@ -115,6 +119,7 @@ function Sidebar() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       markOnline(false);
+      registrarCierreSesion();
     };
   }, []);
 
@@ -132,6 +137,8 @@ function Sidebar() {
               { online: false, ultimaActividad: new Date().toISOString() }
             );
           }
+          // Registrar cierre de sesión
+          await registrarCierreSesion();
         } catch (e) {
           console.log("Error actualizando estado online (logo)", e);
         }

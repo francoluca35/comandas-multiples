@@ -169,13 +169,16 @@ function TurnoCard() {
 
       // Preparar datos para Excel con los campos solicitados
       const datosExcel = historial.map((registro) => {
-        // Función para convertir fecha ISO a formato AM/PM (solo hora)
+        // Función para convertir fecha ISO a formato AM/PM
         const formatearHora = (fechaISO) => {
           if (!fechaISO) return "";
           try {
             const fecha = new Date(fechaISO);
-            // Formato: "08:41:19 PM" (solo hora, minuto, segundo y AM/PM)
-            return fecha.toLocaleTimeString("es-ES", {
+            // Formato: "05/11/2025, 08:41:19 PM"
+            return fecha.toLocaleString("es-ES", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
