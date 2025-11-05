@@ -265,41 +265,57 @@ export async function PUT(request) {
       }
     }
 
-    // Si el pedido se marca como "listo", actualizar el estado de la mesa a "ocupado" (solo para mesas, no delivery)
-    if (nuevoEstado === "listo" && pedidoData.mesa && pedidoData.mesa !== "DELIVERY" && pedidoData.mesa !== "TAKEAWAY") {
-      try {
-        // Buscar la mesa por número
-        const tablesRef = collection(
-          db,
-          `restaurantes/${restauranteId}/tables`
-        );
-        const mesaQuery = query(
-          tablesRef,
-          where("numero", "==", pedidoData.mesa)
-        );
-        const mesaSnapshot = await getDocs(mesaQuery);
+    // Si el pedido se marca como "listo"
+    if (nuevoEstado === "listo") {
+      // Determinar el tipo de pedido
+      const isTakeaway = pedidoData.mesa === "TAKEAWAY" || pedidoData.tipo === "takeaway";
+      const isDelivery = pedidoData.mesa === "DELIVERY" || pedidoData.tipo === "delivery";
+      const isSalon = !isTakeaway && !isDelivery;
 
-        if (!mesaSnapshot.empty) {
-          const mesaDoc = mesaSnapshot.docs[0];
-          const mesaRef = doc(
+      // Actualizar el estado de la mesa a "ocupado" (solo para mesas de salón, no delivery ni takeaway)
+      if (isSalon && pedidoData.mesa) {
+        try {
+          // Buscar la mesa por número
+          const tablesRef = collection(
             db,
-            `restaurantes/${restauranteId}/tables/${mesaDoc.id}`
+            `restaurantes/${restauranteId}/tables`
           );
+          const mesaQuery = query(
+            tablesRef,
+            where("numero", "==", pedidoData.mesa)
+          );
+          const mesaSnapshot = await getDocs(mesaQuery);
 
-          await updateDoc(mesaRef, {
-            estado: "ocupado", // Volver a estado ocupado (rojo) cuando cocina termine
-            updatedAt: serverTimestamp(),
-          });
+          if (!mesaSnapshot.empty) {
+            const mesaDoc = mesaSnapshot.docs[0];
+            const mesaRef = doc(
+              db,
+              `restaurantes/${restauranteId}/tables/${mesaDoc.id}`
+            );
 
-          console.log(`Mesa ${pedidoData.mesa} marcada como ocupada (pedido listo)`);
+            await updateDoc(mesaRef, {
+              estado: "ocupado", // Volver a estado ocupado (rojo) cuando cocina termine
+              updatedAt: serverTimestamp(),
+            });
+
+            console.log(`Mesa ${pedidoData.mesa} marcada como ocupada (pedido listo)`);
+          }
+        } catch (mesaError) {
+          console.error("Error al actualizar estado de la mesa:", mesaError);
+          // No fallar el pedido si hay error al actualizar la mesa
         }
-      } catch (mesaError) {
-        console.error("Error al actualizar estado de la mesa:", mesaError);
-        // No fallar el pedido si hay error al actualizar la mesa
       }
 
-      // Enviar notificación de pedido listo a dashboard y ventas
+      // Enviar notificación de pedido listo a dashboard y ventas (para TODOS los tipos: salón, takeaway y delivery)
       try {
+        // Determinar el tipo correcto
+        let tipoPedido = "salon";
+        if (isTakeaway) {
+          tipoPedido = "takeaway";
+        } else if (isDelivery) {
+          tipoPedido = "delivery";
+        }
+
         const notificationData = {
           type: "order-ready",
           pedido: {
@@ -308,7 +324,9 @@ export async function PUT(request) {
             cliente: pedidoData.cliente,
             productos: pedidoData.productos,
             total: pedidoData.total,
-            tipo: pedidoData.tipo || "salon"
+            tipo: tipoPedido,
+            direccion: pedidoData.direccion || "", // Para delivery
+            whatsapp: pedidoData.whatsapp || "", // Para delivery
           },
           timestamp: new Date().toISOString(),
           restauranteId: restauranteId
@@ -326,7 +344,7 @@ export async function PUT(request) {
           leida: false
         });
 
-        console.log("🔔 Notificación de pedido listo enviada a dashboard y ventas");
+        console.log(`🔔 Notificación de pedido ${tipoPedido.toUpperCase()} listo enviada a dashboard y ventas`);
       } catch (notificationError) {
         console.error("Error al enviar notificación de pedido listo:", notificationError);
         // No fallar el pedido si hay error al enviar notificación
