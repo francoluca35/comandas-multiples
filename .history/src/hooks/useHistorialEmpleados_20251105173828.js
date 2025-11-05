@@ -8,10 +8,8 @@ import {
   query,
   where,
   getDocs,
-  getDoc,
   addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   serverTimestamp,
   orderBy,
@@ -77,45 +75,19 @@ export const useHistorialEmpleados = () => {
         throw new Error(errorMsg);
       }
 
+      // Si ya tenemos sesionDocId guardado, no crear otra
+      const existingSesionId = getSesionDocId();
+      if (existingSesionId) {
+        console.log("⚠️ Sesión ya guardada localmente:", existingSesionId);
+        isProcessing.current = false;
+        setLoading(false);
+        return;
+      }
+
       const historialRef = collection(
         db,
         `restaurantes/${restauranteId}/historialEmpleados`
       );
-
-      // Si ya tenemos sesionDocId guardado, verificar que el documento realmente existe
-      const existingSesionId = getSesionDocId();
-      if (existingSesionId) {
-        console.log("⚠️ Sesión ya guardada localmente:", existingSesionId);
-        
-        // Verificar que el documento realmente existe en Firestore usando getDoc
-        try {
-          const docRef = doc(historialRef, existingSesionId);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists()) {
-            const docData = docSnap.data();
-            // Verificar que el documento no esté cerrado
-            if (docData.horaCierre === null) {
-              console.log("🔁 Reusando sesión existente válida en Firestore:", existingSesionId);
-              isProcessing.current = false;
-              setLoading(false);
-              return;
-            } else {
-              console.log("⚠️ Documento existente ya está cerrado, limpiando localStorage y creando nuevo");
-              setSesionDocId(null);
-              // Continuar para crear uno nuevo
-            }
-          } else {
-            console.log("⚠️ Documento no existe en Firestore, limpiando localStorage y creando nuevo");
-            setSesionDocId(null);
-            // Continuar para crear uno nuevo
-          }
-        } catch (verifyError) {
-          console.warn("⚠️ Error al verificar documento existente, limpiando y creando nuevo:", verifyError);
-          setSesionDocId(null);
-          // Continuar para crear uno nuevo
-        }
-      }
 
       // Buscar si ya hay un turno abierto (horaCierre == null) para este usuario
       // Primero intentamos con la query completa, si falla por índice, hacemos query simple
@@ -423,90 +395,10 @@ export const useHistorialEmpleados = () => {
     }
   };
 
-  const obtenerHistorial = async () => {
-    try {
-      const restauranteId = getRestaurantId();
-      if (!restauranteId) {
-        throw new Error("No hay restauranteId en localStorage");
-      }
-
-      const historialRef = collection(
-        db,
-        `restaurantes/${restauranteId}/historialEmpleados`
-      );
-
-      const snapshot = await getDocs(historialRef);
-      const historial = [];
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        historial.push({
-          id: docSnap.id,
-          fecha: data.fecha || "",
-          horaApertura: data.horaApertura || "",
-          horaCierre: data.horaCierre || "",
-          rol: data.rol || "",
-          usuario: data.usuario || "",
-          usuarioId: data.usuarioId || "",
-          usuarioNombre: data.usuarioNombre || "",
-          usuarioEmail: data.usuarioEmail || "",
-          timestamp: data.timestamp,
-        });
-      });
-
-      // Ordenar por fecha y hora de apertura (más reciente primero)
-      historial.sort((a, b) => {
-        const fechaA = a.horaApertura ? new Date(a.horaApertura).getTime() : 0;
-        const fechaB = b.horaApertura ? new Date(b.horaApertura).getTime() : 0;
-        return fechaB - fechaA;
-      });
-
-      console.log("✅ Historial obtenido:", historial.length, "documentos");
-      return historial;
-    } catch (err) {
-      console.error("❌ Error obtenerHistorial:", err);
-      throw err;
-    }
-  };
-
-  const borrarHistorial = async () => {
-    try {
-      const restauranteId = getRestaurantId();
-      if (!restauranteId) {
-        throw new Error("No hay restauranteId en localStorage");
-      }
-
-      const historialRef = collection(
-        db,
-        `restaurantes/${restauranteId}/historialEmpleados`
-      );
-
-      const snapshot = await getDocs(historialRef);
-      const deletePromises = [];
-
-      snapshot.forEach((docSnap) => {
-        deletePromises.push(deleteDoc(docSnap.ref));
-      });
-
-      await Promise.all(deletePromises);
-      console.log("✅ Historial borrado:", deletePromises.length, "documentos eliminados");
-
-      // Limpiar también el localStorage
-      setSesionDocId(null);
-
-      return true;
-    } catch (err) {
-      console.error("❌ Error borrarHistorial:", err);
-      throw err;
-    }
-  };
-
   return {
     loading,
     error,
     registrarInicioSesion,
     registrarCierreSesion,
-    obtenerHistorial,
-    borrarHistorial,
   };
 };
