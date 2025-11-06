@@ -34,11 +34,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   const [paymentData, setPaymentData] = useState(null);
   const [currentExternalRef, setCurrentExternalRef] = useState(null);
   const [showTicketSendModal, setShowTicketSendModal] = useState(false);
-  
-  // Estado para el formulario de cliente
-  const [showClienteModal, setShowClienteModal] = useState(false);
-  const [clienteNombre, setClienteNombre] = useState("");
-  const [clienteTelefono, setClienteTelefono] = useState("");
 
   // Hook para generar tickets
   const { printTicket, isGenerating } = useTicketGenerator();
@@ -83,66 +78,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     }
   }, [isApproved, currentExternalRef, onPaymentComplete]);
 
-  // Función para guardar información del cliente
-  const handleGuardarCliente = () => {
-    if (!clienteNombre.trim()) {
-      alert("Por favor, ingresa el nombre del cliente");
-      return;
-    }
-    setShowClienteModal(false);
-    console.log("✅ Información del cliente guardada:", {
-      nombre: clienteNombre,
-      telefono: clienteTelefono,
-    });
-  };
-
-  // Función para cancelar y cerrar el modal sin guardar
-  const handleCancelarCliente = () => {
-    // Si no había datos previos, limpiar todo
-    if (!orderData?.cliente || orderData.cliente === "Sin nombre") {
-      setClienteNombre("");
-      setClienteTelefono("");
-    } else {
-      // Si había datos previos, restaurarlos
-      setClienteNombre(orderData.cliente);
-      setClienteTelefono(orderData.telefono || "");
-    }
-    setShowClienteModal(false);
-  };
-
-  // Función para limpiar datos del cliente después de cobrar
-  const limpiarDatosCliente = () => {
-    setClienteNombre("");
-    setClienteTelefono("");
-  };
-
-  // Inicializar datos del cliente desde orderData si existen
-  useEffect(() => {
-    if (orderData?.cliente && orderData.cliente !== "Sin nombre") {
-      setClienteNombre(orderData.cliente);
-    } else {
-      setClienteNombre("");
-    }
-    if (orderData?.telefono) {
-      setClienteTelefono(orderData.telefono);
-    } else {
-      setClienteTelefono("");
-    }
-  }, [orderData]);
-
-  // Cuando se abre el modal de cliente, cargar los datos actuales
-  useEffect(() => {
-    if (showClienteModal) {
-      // Si hay datos guardados, cargarlos; si no, mantener vacío
-      if (!clienteNombre && orderData?.cliente && orderData.cliente !== "Sin nombre") {
-        setClienteNombre(orderData.cliente);
-      }
-      if (!clienteTelefono && orderData?.telefono) {
-        setClienteTelefono(orderData.telefono);
-      }
-    }
-  }, [showClienteModal]);
-
   // Función para registrar ingreso automáticamente
   const registrarIngresoAutomatico = async (metodoPago, monto) => {
     try {
@@ -167,10 +102,9 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
         opcionPago = "caja";
       }
 
-      // Usar el nombre del cliente del formulario si está disponible, sino el de orderData
-      const nombreCliente = clienteNombre || orderData?.cliente || "Cliente";
-
-      const motivo = `Cobranza mesa ${orderData?.mesa || "N/A"} - ${nombreCliente}`;
+      const motivo = `Cobranza mesa ${orderData?.mesa || "N/A"} - ${
+        orderData?.cliente || "Cliente"
+      }`;
 
       console.log("💰 Registrando ingreso automático:", {
         tipoIngreso,
@@ -342,10 +276,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
       });
 
       console.log("Mesa liberada exitosamente:", orderData.mesa);
-      
-      // Limpiar datos del cliente después de liberar mesa
-      limpiarDatosCliente();
-      
       alert("Mesa liberada exitosamente");
       onPaymentComplete("liberada");
       onClose();
@@ -360,9 +290,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     
     // Actualizar stock antes de notificar el pago completado
     await actualizarStockVenta();
-    
-    // Limpiar datos del cliente después de cobrar
-    limpiarDatosCliente();
     
     // Notificar que el pago se completó
     if (onPaymentComplete) {
@@ -379,9 +306,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     
     // Actualizar stock antes de notificar el pago completado
     await actualizarStockVenta();
-    
-    // Limpiar datos del cliente después de cobrar
-    limpiarDatosCliente();
     
     // Notificar que el pago se completó aunque no se envió el ticket
     if (onPaymentComplete) {
@@ -510,19 +434,7 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowClienteModal(true)}
-            className={`rounded-lg p-3 text-center w-full transition-all duration-200 hover:opacity-90 cursor-pointer ${
-              clienteNombre || (orderData?.cliente && orderData.cliente !== "Sin nombre")
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-yellow-600 hover:bg-yellow-700"
-            }`}
-            title={
-              clienteNombre || (orderData?.cliente && orderData.cliente !== "Sin nombre")
-                ? "Ver/Editar información del cliente"
-                : "Agregar información del cliente"
-            }
-          >
+          <div className="bg-gray-700 rounded-lg p-3 text-center">
             <svg
               className="w-6 h-6 text-white mx-auto mb-1"
               fill="none"
@@ -538,14 +450,9 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
             </svg>
             <div className="text-white text-sm">Cliente</div>
             <div className="text-white font-bold text-xs">
-              {clienteNombre || orderData?.cliente || "Sin nombre"}
+              {orderData?.cliente || "Sin nombre"}
             </div>
-            {clienteTelefono && (
-              <div className="text-white text-xs mt-1 opacity-90">
-                📞 {clienteTelefono}
-              </div>
-            )}
-          </button>
+          </div>
 
           <div className="bg-gray-700 rounded-lg p-3 text-center">
             <svg
@@ -898,82 +805,6 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
           orderData={orderData}
           onSendComplete={handleTicketSendComplete}
         />
-      )}
-
-      {/* Modal de Información del Cliente */}
-      {showClienteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-gray-800 rounded-lg p-6 w-96 max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white text-xl font-bold">Información del Cliente</h2>
-              <button
-                onClick={() => setShowClienteModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Campo Nombre */}
-              <div>
-                <label className="block text-white text-sm font-medium mb-2">
-                  Nombre <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={clienteNombre}
-                  onChange={(e) => setClienteNombre(e.target.value)}
-                  placeholder="Ingresa el nombre del cliente"
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  autoFocus
-                />
-              </div>
-
-              {/* Campo Teléfono */}
-              <div>
-                <label className="block text-white text-sm font-medium mb-2">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  value={clienteTelefono}
-                  onChange={(e) => setClienteTelefono(e.target.value)}
-                  placeholder="Ingresa el teléfono del cliente"
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Botones */}
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleCancelarCliente}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-4 py-2 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleGuardarCliente}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 transition-colors"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

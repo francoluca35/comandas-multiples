@@ -120,28 +120,11 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   useEffect(() => {
     if (orderData?.cliente && orderData.cliente !== "Sin nombre") {
       setClienteNombre(orderData.cliente);
-    } else {
-      setClienteNombre("");
     }
     if (orderData?.telefono) {
       setClienteTelefono(orderData.telefono);
-    } else {
-      setClienteTelefono("");
     }
   }, [orderData]);
-
-  // Cuando se abre el modal de cliente, cargar los datos actuales
-  useEffect(() => {
-    if (showClienteModal) {
-      // Si hay datos guardados, cargarlos; si no, mantener vacío
-      if (!clienteNombre && orderData?.cliente && orderData.cliente !== "Sin nombre") {
-        setClienteNombre(orderData.cliente);
-      }
-      if (!clienteTelefono && orderData?.telefono) {
-        setClienteTelefono(orderData.telefono);
-      }
-    }
-  }, [showClienteModal]);
 
   // Función para registrar ingreso automáticamente
   const registrarIngresoAutomatico = async (metodoPago, monto) => {
