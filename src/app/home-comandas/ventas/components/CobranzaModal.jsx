@@ -11,6 +11,7 @@ import PaymentStatusModal from "@/components/PaymentStatusModal";
 import QRPaymentModal from "@/components/QRPaymentModal";
 import POSPaymentModal from "@/components/POSPaymentModal";
 import TicketSendModal from "@/components/TicketSendModal";
+import CashAccountSelectionModal from "@/components/CashAccountSelectionModal";
 
 // Función para obtener el restaurantId desde localStorage
 const getRestaurantId = () => {
@@ -34,6 +35,7 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   const [paymentData, setPaymentData] = useState(null);
   const [currentExternalRef, setCurrentExternalRef] = useState(null);
   const [showTicketSendModal, setShowTicketSendModal] = useState(false);
+  const [showCashAccountModal, setShowCashAccountModal] = useState(false);
   
   // Estado para el formulario de cliente
   const [showClienteModal, setShowClienteModal] = useState(false);
@@ -144,7 +146,7 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   }, [showClienteModal]);
 
   // Función para registrar ingreso automáticamente
-  const registrarIngresoAutomatico = async (metodoPago, monto) => {
+  const registrarIngresoAutomatico = async (metodoPago, monto, opcionPagoSeleccionada = null) => {
     try {
       const restauranteId = getRestaurantId();
       const fecha = new Date();
@@ -155,7 +157,8 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
       if (metodoPago === "efectivo") {
         tipoIngreso = "Venta Mesa";
         formaIngreso = "Efectivo";
-        opcionPago = "caja"; // Se suma a caja registradora
+        // Usar la opción seleccionada si se proporciona, sino usar "caja" por defecto
+        opcionPago = opcionPagoSeleccionada || "caja";
       } else if (metodoPago === "tarjeta" || metodoPago === "qr") {
         tipoIngreso = "Venta Mesa";
         formaIngreso = "MercadoPago";
@@ -241,19 +244,9 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
       // Procesar pago según el método seleccionado
       switch (selectedPaymentMethod.id) {
         case "efectivo":
-          console.log("Procesando pago en efectivo...");
-          // Para efectivo, procesar inmediatamente y luego mostrar modal de envío
-          try {
-            // Registrar ingreso automático para efectivo
-            await registrarIngresoAutomatico("efectivo", orderData?.monto || 0);
-            console.log("Pago en efectivo procesado");
-
-            // Mostrar modal de envío de ticket
-            setShowTicketSendModal(true);
-          } catch (paymentError) {
-            console.error("Error al procesar pago en efectivo:", paymentError);
-            alert("Error al procesar el pago: " + paymentError.message);
-          }
+          console.log("Mostrando modal de selección de cuenta para efectivo...");
+          // Para efectivo, mostrar modal de selección de cuenta primero
+          setShowCashAccountModal(true);
           break;
 
         case "tarjeta":
@@ -388,6 +381,28 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
       onPaymentComplete("efectivo");
     }
     onClose();
+  };
+
+  // Función para manejar la selección de cuenta en el modal de efectivo
+  const handleCashAccountSelect = async (opcionPago) => {
+    try {
+      console.log("Procesando pago en efectivo con opción:", opcionPago);
+      setShowCashAccountModal(false);
+      
+      // Registrar ingreso automático para efectivo con la opción seleccionada
+      await registrarIngresoAutomatico("efectivo", orderData?.monto || 0, opcionPago);
+      console.log("Pago en efectivo procesado");
+
+      // Mostrar modal de envío de ticket
+      setShowTicketSendModal(true);
+    } catch (paymentError) {
+      console.error("Error al procesar pago en efectivo:", paymentError);
+      alert("Error al procesar el pago: " + paymentError.message);
+    }
+  };
+
+  const handleCashAccountModalClose = () => {
+    setShowCashAccountModal(false);
   };
 
   if (!isOpen) return null;
@@ -975,6 +990,15 @@ function CobranzaModal({ isOpen, onClose, orderData, onPaymentComplete }) {
           </div>
         </div>
       )}
+
+      {/* Modal de Selección de Cuenta para Efectivo */}
+      <CashAccountSelectionModal
+        isOpen={showCashAccountModal}
+        onClose={handleCashAccountModalClose}
+        onSelect={handleCashAccountSelect}
+        monto={orderData?.monto || 0}
+        tipoVenta="Venta Mesa"
+      />
     </div>
   );
 }
