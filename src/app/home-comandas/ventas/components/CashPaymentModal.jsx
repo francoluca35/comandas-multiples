@@ -1,10 +1,12 @@
 "use client";
 import React, { useState } from "react";
 import { useIngresos } from "../../../../hooks/useIngresos";
+import CashAccountSelectionModal from "@/components/CashAccountSelectionModal";
 
 function CashPaymentModal({ isOpen, onClose, orderData, onPaymentComplete }) {
   const [amountReceived, setAmountReceived] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCashAccountModal, setShowCashAccountModal] = useState(false);
   const { crearIngreso } = useIngresos();
 
   const calculateChange = () => {
@@ -19,10 +21,16 @@ function CashPaymentModal({ isOpen, onClose, orderData, onPaymentComplete }) {
       return;
     }
 
+    // Mostrar modal de selección de cuenta primero
+    setShowCashAccountModal(true);
+  };
+
+  const handleCashAccountSelect = async (opcionPago) => {
+    setShowCashAccountModal(false);
     setIsProcessing(true);
     try {
-      // Registrar ingreso automático
-      await registrarIngresoAutomatico(orderData.total, orderData.cliente);
+      // Registrar ingreso automático con la opción seleccionada
+      await registrarIngresoAutomatico(orderData.total, orderData.cliente, opcionPago);
       
       // Enviar a cocina
       await enviarACocina();
@@ -37,14 +45,17 @@ function CashPaymentModal({ isOpen, onClose, orderData, onPaymentComplete }) {
     }
   };
 
-  const registrarIngresoAutomatico = async (monto, cliente) => {
+  const handleCashAccountModalClose = () => {
+    setShowCashAccountModal(false);
+  };
+
+  const registrarIngresoAutomatico = async (monto, cliente, opcionPago = "caja") => {
     try {
-      console.log("💰 Registrando ingreso automático:", { monto, cliente });
+      console.log("💰 Registrando ingreso automático:", { monto, cliente, opcionPago });
       const fecha = new Date();
       const motivo = `Delivery - Cliente: ${cliente}`;
       const tipoIngreso = "Venta Delivery";
       const formaIngreso = "Efectivo";
-      const opcionPago = "caja";
       
       await crearIngreso(tipoIngreso, motivo, monto, formaIngreso, fecha, opcionPago);
       console.log("✅ Ingreso registrado exitosamente");
@@ -198,6 +209,15 @@ function CashPaymentModal({ isOpen, onClose, orderData, onPaymentComplete }) {
           </button>
         </div>
       </div>
+
+      {/* Modal de Selección de Cuenta para Efectivo */}
+      <CashAccountSelectionModal
+        isOpen={showCashAccountModal}
+        onClose={handleCashAccountModalClose}
+        onSelect={handleCashAccountSelect}
+        monto={orderData.total}
+        tipoVenta="Venta Delivery"
+      />
     </div>
   );
 }

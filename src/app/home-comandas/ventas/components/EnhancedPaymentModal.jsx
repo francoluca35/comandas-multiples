@@ -3,6 +3,7 @@
 import { useState } from "react";
 import TicketSendModal from "@/components/TicketSendModal";
 import QRPaymentModal from "@/components/QRPaymentModal";
+import CashAccountSelectionModal from "@/components/CashAccountSelectionModal";
 import { usePaymentProcessor } from "@/hooks/usePaymentProcessor";
 import { useIngresos } from "@/hooks/useIngresos";
 
@@ -18,8 +19,10 @@ export default function EnhancedPaymentModal({
   const [mercadopagoOption, setMercadopagoOption] = useState("");
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showCashAccountModal, setShowCashAccountModal] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingCashPayment, setPendingCashPayment] = useState(null);
   const { processPayment: processMercadoPagoPayment } = usePaymentProcessor();
 
   const total = orderData?.monto || 0;
@@ -109,142 +112,22 @@ export default function EnhancedPaymentModal({
         }
       }
 
-      // Para efectivo, continuar con la lógica normal
-      // Obtener el restauranteId del localStorage o contexto
-      let restaurantId = localStorage.getItem("restauranteId");
-
-      // Si no hay restauranteId en localStorage, intentar obtenerlo del contexto o usar uno por defecto
-      if (!restaurantId) {
-        // Intentar obtener del contexto de la aplicación
-        const appContext = localStorage.getItem("appContext");
-        if (appContext) {
-          try {
-            const context = JSON.parse(appContext);
-            restaurantId = context.restauranteId;
-          } catch (e) {
-            console.warn("Error parsing app context:", e);
-          }
-        }
-
-        // Si aún no hay restauranteId, usar uno por defecto
-        if (!restaurantId) {
-          restaurantId = "default-restaurant";
-          console.warn(
-            "⚠️ No se encontró restauranteId, usando valor por defecto:",
-            restaurantId
-          );
-        }
+      // Para efectivo, mostrar modal de selección de cuenta primero
+      if (paymentMethod === "efectivo") {
+        // Guardar los datos del pago pendiente
+        setPendingCashPayment({
+          cashAmount,
+          change,
+        });
+        setShowCashAccountModal(true);
+        setIsProcessing(false);
+        return;
       }
 
-      console.log("🏪 Usando restauranteId:", restaurantId);
-
-      // Crear datos del pedido para enviar a cocina
-      const kitchenOrder = {
-        restauranteId: restaurantId,
-        mesa: orderData.mesa,
-        productos: orderData.productos || [],
-        total: orderData.monto || total,
-        cliente: orderData.cliente || "Cliente",
-        notas: `Método de pago: ${paymentMethod}${
-          paymentMethod === "efectivo"
-            ? ` | Monto recibido: $${cashAmount} | Vuelto: $${change}`
-            : ""
-        }`,
-        metodoPago: paymentMethod,
-        montoRecibido:
-          paymentMethod === "efectivo" ? parseFloat(cashAmount) : total,
-        vuelto: paymentMethod === "efectivo" ? parseFloat(change) : 0,
-        whatsapp: orderData.whatsapp || "",
-        direccion: orderData.direccion || "",
-        timestamp: new Date(),
-        estado: "pendiente",
-      };
-
-      // Validar datos requeridos
-      if (
-        !kitchenOrder.restauranteId ||
-        !kitchenOrder.mesa ||
-        !kitchenOrder.productos ||
-        kitchenOrder.productos.length === 0
-      ) {
-        throw new Error("Datos incompletos para enviar a cocina");
-      }
-
-      console.log("🍳 Enviando pedido a cocina:", kitchenOrder);
-
-      // Registrar ingreso automático para delivery / takeaway cuando el pago
-      // se procesa localmente (efectivo u otros métodos que no pasan por MercadoPago).
-      try {
-        const isDelivery = orderData?.mesa === "DELIVERY";
-        const isTakeaway = orderData?.mesa === "TAKEAWAY";
-
-        if (isDelivery || isTakeaway) {
-          const tipoIngreso = isDelivery ? "Venta Delivery" : "Venta Takeaway";
-          const motivo = `${isDelivery ? "Delivery" : "Takeaway"} - Cliente: ${
-            orderData?.cliente || "Cliente"
-          }`;
-          const fecha = new Date();
-          const formaIngreso =
-            paymentMethod === "efectivo"
-              ? "Efectivo"
-              : paymentMethod || "efectivo";
-          const opcionPago =
-            paymentMethod === "efectivo" ? "caja" : "cuenta_restaurante";
-
-          try {
-            await crearIngreso(
-              tipoIngreso,
-              motivo,
-              kitchenOrder.total,
-              formaIngreso,
-              fecha,
-              opcionPago
-            );
-            console.log(
-              "✅ Ingreso registrado automáticamente para venta:",
-              tipoIngreso
-            );
-          } catch (ingresoErr) {
-            console.error(
-              "❌ Error registrando ingreso automático:",
-              ingresoErr
-            );
-            // No interrumpir el flujo principal si falla el registro del ingreso
-          }
-        }
-      } catch (err) {
-        console.error("❌ Error preparando registro de ingreso:", err);
-      }
-
-      // Enviar a cocina
-      const response = await fetch("/api/pedidos-cocina", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(kitchenOrder),
-      });
-
-      console.log("📡 Respuesta del servidor:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Pedido enviado a cocina exitosamente:", result);
-        // Mostrar modal de envío de ticket
-        setShowTicketModal(true);
-      } else {
-        const errorData = await response.json();
-        console.error("❌ Error del servidor:", errorData);
-        throw new Error(
-          `Error al enviar pedido a cocina: ${
-            errorData.error || "Error desconocido"
-          }`
-        );
-      }
+      // Si llegamos aquí, no debería pasar (solo hay efectivo y MercadoPago)
+      // Pero por si acaso, mostrar error
+      alert("Método de pago no reconocido");
+      setIsProcessing(false);
     } catch (error) {
       console.error("Error procesando pago:", error);
       alert(`Error al procesar el pago: ${error.message}`);
@@ -281,6 +164,151 @@ export default function EnhancedPaymentModal({
   const handleTicketSent = () => {
     setShowTicketModal(false);
     onPaymentComplete(paymentMethod, orderData);
+  };
+
+  // Función para manejar la selección de cuenta en el modal de efectivo
+  const handleCashAccountSelect = async (opcionPago) => {
+    setShowCashAccountModal(false);
+    setIsProcessing(true);
+
+    try {
+      // Obtener el restauranteId del localStorage o contexto
+      let restaurantId = localStorage.getItem("restauranteId");
+
+      if (!restaurantId) {
+        const appContext = localStorage.getItem("appContext");
+        if (appContext) {
+          try {
+            const context = JSON.parse(appContext);
+            restaurantId = context.restauranteId;
+          } catch (e) {
+            console.warn("Error parsing app context:", e);
+          }
+        }
+
+        if (!restaurantId) {
+          restaurantId = "default-restaurant";
+          console.warn(
+            "⚠️ No se encontró restauranteId, usando valor por defecto:",
+            restaurantId
+          );
+        }
+      }
+
+      console.log("🏪 Usando restauranteId:", restaurantId);
+
+      // Crear datos del pedido para enviar a cocina
+      const kitchenOrder = {
+        restauranteId: restaurantId,
+        mesa: orderData.mesa,
+        productos: orderData.productos || [],
+        total: orderData.monto || total,
+        cliente: orderData.cliente || "Cliente",
+        notas: `Método de pago: efectivo | Monto recibido: $${pendingCashPayment?.cashAmount || cashAmount} | Vuelto: $${pendingCashPayment?.change || change}`,
+        metodoPago: "efectivo",
+        montoRecibido: parseFloat(pendingCashPayment?.cashAmount || cashAmount),
+        vuelto: parseFloat(pendingCashPayment?.change || change),
+        whatsapp: orderData.whatsapp || "",
+        direccion: orderData.direccion || "",
+        timestamp: new Date(),
+        estado: "pendiente",
+      };
+
+      // Validar datos requeridos
+      if (
+        !kitchenOrder.restauranteId ||
+        !kitchenOrder.mesa ||
+        !kitchenOrder.productos ||
+        kitchenOrder.productos.length === 0
+      ) {
+        throw new Error("Datos incompletos para enviar a cocina");
+      }
+
+      console.log("🍳 Enviando pedido a cocina:", kitchenOrder);
+
+      // Registrar ingreso automático para delivery / takeaway
+      try {
+        const isDelivery = orderData?.mesa === "DELIVERY";
+        const isTakeaway = orderData?.mesa === "TAKEAWAY";
+
+        if (isDelivery || isTakeaway) {
+          const tipoIngreso = isDelivery ? "Venta Delivery" : "Venta Takeaway";
+          const motivo = `${isDelivery ? "Delivery" : "Takeaway"} - Cliente: ${
+            orderData?.cliente || "Cliente"
+          }`;
+          const fecha = new Date();
+          const formaIngreso = "Efectivo";
+          // Usar la opción seleccionada
+          const opcionPagoSeleccionada = opcionPago;
+
+          try {
+            await crearIngreso(
+              tipoIngreso,
+              motivo,
+              kitchenOrder.total,
+              formaIngreso,
+              fecha,
+              opcionPagoSeleccionada
+            );
+            console.log(
+              "✅ Ingreso registrado automáticamente para venta:",
+              tipoIngreso,
+              "con opción:",
+              opcionPagoSeleccionada
+            );
+          } catch (ingresoErr) {
+            console.error(
+              "❌ Error registrando ingreso automático:",
+              ingresoErr
+            );
+            // No interrumpir el flujo principal si falla el registro del ingreso
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error preparando registro de ingreso:", err);
+      }
+
+      // Enviar a cocina
+      const response = await fetch("/api/pedidos-cocina", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(kitchenOrder),
+      });
+
+      console.log("📡 Respuesta del servidor:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Pedido enviado a cocina exitosamente:", result);
+        // Mostrar modal de envío de ticket
+        setShowTicketModal(true);
+        setPendingCashPayment(null);
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Error del servidor:", errorData);
+        throw new Error(
+          `Error al enviar pedido a cocina: ${
+            errorData.error || "Error desconocido"
+          }`
+        );
+      }
+    } catch (error) {
+      console.error("Error procesando pago en efectivo:", error);
+      alert(`Error al procesar el pago: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCashAccountModalClose = () => {
+    setShowCashAccountModal(false);
+    setPendingCashPayment(null);
   };
 
   if (!isOpen) return null;
@@ -584,9 +612,12 @@ export default function EnhancedPaymentModal({
             metodoPago: paymentMethod || "mercadopago",
             montoRecibido:
               paymentMethod === "efectivo"
-                ? parseFloat(cashAmount)
+                ? parseFloat(pendingCashPayment?.cashAmount || cashAmount)
                 : orderData.monto || total,
-            vuelto: paymentMethod === "efectivo" ? parseFloat(change) : 0,
+            vuelto:
+              paymentMethod === "efectivo"
+                ? parseFloat(pendingCashPayment?.change || change)
+                : 0,
             // Asegurar que tenga los datos correctos
             monto: orderData.monto || total,
             total: orderData.monto || total,
@@ -594,6 +625,21 @@ export default function EnhancedPaymentModal({
           onSendComplete={handleTicketSent}
         />
       )}
+
+      {/* Modal de Selección de Cuenta para Efectivo */}
+      <CashAccountSelectionModal
+        isOpen={showCashAccountModal}
+        onClose={handleCashAccountModalClose}
+        onSelect={handleCashAccountSelect}
+        monto={orderData?.monto || total}
+        tipoVenta={
+          orderData?.mesa === "DELIVERY"
+            ? "Venta Delivery"
+            : orderData?.mesa === "TAKEAWAY"
+            ? "Venta Takeaway"
+            : "Venta Mesa"
+        }
+      />
     </>
   );
 }
